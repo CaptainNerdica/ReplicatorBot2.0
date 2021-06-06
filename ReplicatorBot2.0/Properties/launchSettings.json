@@ -1,11 +1,14 @@
 {
   "profiles": {
-    "ReplicatorBot2._0": {
+    "WSL 2": {
+      "commandName": "WSL2"
+    },
+    "ReplicatorBot2": {
       "commandName": "Project",
+      "commandLineArgs": "-f \"%USERPROFILE%\\bot.token\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
-      },
-      "dotnetRunMessages": "true"
+      }
     }
   }
 }
