@@ -5,14 +5,14 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
-COPY ["ReplicatorBot2.0/ReplicatorBot2.csproj", "ReplicatorBot2.0/"]
+COPY ["ReplicatorBot2.0/ReplicatorBot2.csproj", "/"]
 RUN dotnet restore "ReplicatorBot2.0/ReplicatorBot2.csproj"
 COPY . .
 WORKDIR "/src/ReplicatorBot2.0"
-RUN dotnet build "ReplicatorBot2.csproj" -c Release -o /app/build
+RUN dotnet build "../ReplicatorBot2.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "ReplicatorBot2.csproj" -c Release -o /app/publish
+RUN dotnet publish "../ReplicatorBot2.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

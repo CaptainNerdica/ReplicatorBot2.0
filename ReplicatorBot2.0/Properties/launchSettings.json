@@ -1,14 +1,17 @@
 {
-	"profiles": {
-		"WSL 2": {
-			"commandName": "WSL2"
-		},
-		"ReplicatorBot2": {
-			"commandName": "Project",
-			"commandLineArgs": "-f \"%USERPROFILE%\\bot.token\"",
-			"environmentVariables": {
-				"DOTNET_ENVIRONMENT": "Development"
-			}
-		}
-	}
+  "profiles": {
+    "WSL 2": {
+      "commandName": "WSL2"
+    },
+    "ReplicatorBot2": {
+      "commandName": "Project",
+      "commandLineArgs": "-f \"%USERPROFILE%\\bot.token\"",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
 }
