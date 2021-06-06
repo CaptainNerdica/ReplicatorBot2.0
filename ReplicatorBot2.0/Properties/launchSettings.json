@@ -9,6 +9,9 @@
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }
+    },
+    "Docker (1)": {
+      "commandName": "Docker"
     }
   }
 }

@@ -5,6 +5,10 @@
 		<UserSecretsId>dotnet-ReplicatorBot2.0-EDA66423-B5E7-4FD7-8A5D-D2B75F3FD9D5</UserSecretsId>
 		<RootNamespace>ReplicatorBot</RootNamespace>
 		<AssemblyName>ReplicatorBot2</AssemblyName>
+		<Authors>Aidan Orr</Authors>
+		<Company />
+		<Product />
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,5 +21,6 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="5.0.6" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.6" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.14" />
 	</ItemGroup>
 </Project>
