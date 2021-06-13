@@ -6,8 +6,6 @@
 		<RootNamespace>ReplicatorBot</RootNamespace>
 		<AssemblyName>ReplicatorBot2</AssemblyName>
 		<Authors>Aidan Orr</Authors>
-		<Company />
-		<Product />
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 

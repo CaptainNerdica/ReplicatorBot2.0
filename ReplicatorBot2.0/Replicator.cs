@@ -125,6 +125,7 @@ namespace ReplicatorBot
 
 		public static async Task SendRandomMessageAsync(Random rand, ISocketMessageChannel channel, GuildInfo info)
 		{
+			using var typing = channel.EnterTypingState();
 			if (info.Messages.Any())
 			{
 				int next = rand.Next(info.TargetMessageCount);

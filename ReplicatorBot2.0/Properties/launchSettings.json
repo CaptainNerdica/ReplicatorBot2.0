@@ -5,7 +5,7 @@
     },
     "ReplicatorBot2": {
       "commandName": "Project",
-      "commandLineArgs": "-f \"%USERPROFILE%\\bot.token\"",
+      "commandLineArgs": "-f \"%USERPROFILE%/bot.token\"",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
       }
