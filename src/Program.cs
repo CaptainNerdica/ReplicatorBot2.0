@@ -24,17 +24,33 @@ namespace ReplicatorBot
 			{
 				{ "-t", "Token" },
 				{ "--token", "Token" },
-				{ "-f", "TokenFile" },
-				{ "--file", "TokenFile" }
+				{ "-c", "ConnectionString" },
+				{ "--connection", "ConnectionString" },
+				{ "-p", "Provider" },
+				{ "--provider", "Provider" }
 			}))
 			.ConfigureServices((context, services) =>
 			{
-				using AppDbContext discordContext = new AppDbContext(context.Configuration.GetConnectionString("ApplicationDb"));
-				if (!discordContext.Database.CanConnect())
-					discordContext.Database.Migrate();
+
+				string csValue = context.Configuration.GetValue<string>("ConnectionString");
+				DbProvider provider = context.Configuration.GetValue("Provider", DbProvider.Sqlite);
+				string connection;
+				if (string.IsNullOrEmpty(csValue))
+				{
+					provider = DbProvider.Sqlite;
+					connection = "DataSource=/data/application.db";
+				}
+				else
+					connection = csValue;
+
+				
+				
+				using AppDbContext dbContext = new AppDbContext(connection, provider);
+				if (!dbContext.Database.CanConnect())
+					dbContext.Database.Migrate();
 
 				services.AddLogging()
-					.AddScoped(provider => new AppDbContext(context.Configuration.GetConnectionString("ApplicationDb")))
+					.AddScoped(services => new AppDbContext(connection, provider))
 					.AddSingleton(ConfigureClient(context.Configuration).GetAwaiter().GetResult())
 					.AddSingleton<CommandService>()
 					.AddSingleton<CommandHandler>()

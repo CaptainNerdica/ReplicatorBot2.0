@@ -10,12 +10,37 @@ using System.Threading.Tasks;
 
 namespace ReplicatorBot
 {
+	public enum DbProvider
+	{
+		Sqlite,
+		SqlServer,
+		InMemory
+	}
 	public class AppDbContext : DbContext
 	{
-		private readonly string _connectionString = "DataSource=application.db";
+		private readonly string _connectionString = "DataSource=/data/application.db";
+		private readonly DbProvider _provider = DbProvider.Sqlite;
 
+		/// <summary>
+		/// Creates a new database context.
+		/// </summary>
 		public AppDbContext() : base() { }
-		public AppDbContext(string connectionString) : base() => _connectionString = connectionString;
+		/// <summary>
+		/// Creates a new database context.
+		/// </summary>
+		/// <remarks>Database provider defaults to Sqlite</remarks>
+		/// <param name="connectionString">Connection string for this context</param>
+		public AppDbContext(string connectionString) : this(connectionString, DbProvider.Sqlite) { }
+		/// <summary>
+		/// Creates a new database context.
+		/// </summary>
+		/// <param name="connectionString">Connection string for this context.</param>
+		/// <param name="provider">Database provider to use.</param>
+		public AppDbContext(string connectionString, DbProvider provider) : base()
+		{
+			_connectionString = connectionString;
+			_provider = provider;
+		}
 
 		public DbSet<GuildInfo> GuildInfo { get; set; }
 		public DbSet<ChannelPermissions> ChannelPermissions { get; set; }
@@ -134,7 +159,22 @@ namespace ReplicatorBot
 		protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 		{
 			if (!optionsBuilder.IsConfigured)
-				optionsBuilder.UseSqlite(_connectionString).UseLazyLoadingProxies();
+			{
+				switch (_provider)
+				{
+					default:
+					case DbProvider.Sqlite:
+						optionsBuilder.UseSqlite(_connectionString);
+						break;
+					case DbProvider.SqlServer:
+						optionsBuilder.UseSqlServer(_connectionString);
+						break;
+					case DbProvider.InMemory:
+						optionsBuilder.UseInMemoryDatabase("application");
+						break;
+				}
+				optionsBuilder.UseLazyLoadingProxies();
+			}
 		}
 	}
 
