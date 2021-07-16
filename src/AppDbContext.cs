@@ -191,6 +191,8 @@ namespace ReplicatorBot
 		public bool AutoUpdateMessages { get; set; }
 		public bool CanMention { get; set; }
 		public bool CanEmbed { get; set; }
+		public int Delay { get; set; }
+		public bool FixedDelay { get; set; }
 		public DateTime LastUpdate { get; set; }
 
 		public GuildInfo() { }
@@ -201,7 +203,7 @@ namespace ReplicatorBot
 			Prefix = "!";
 		}
 
-		public GuildInfo(ulong guildId, bool enabled, string prefix, ulong? targetUserId, int guildMessageCount, int targetMessageCount, double probability, bool autoUpdateProbability, bool canMention, bool canEmbed, DateTime lastUpdate)
+		public GuildInfo(ulong guildId, bool enabled, string prefix, ulong? targetUserId, int guildMessageCount, int targetMessageCount, double probability, bool autoUpdateProbability, bool canMention, bool canEmbed, int delay, bool fixedDelay, DateTime lastUpdate)
 		{
 			GuildId = guildId;
 			Enabled = enabled;
@@ -213,6 +215,8 @@ namespace ReplicatorBot
 			AutoUpdateProbability = autoUpdateProbability;
 			CanMention = canMention;
 			CanEmbed = canEmbed;
+			Delay = delay;
+			FixedDelay = fixedDelay;
 			LastUpdate = lastUpdate;
 		}
 

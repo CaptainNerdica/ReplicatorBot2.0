@@ -43,11 +43,8 @@ namespace ReplicatorBot
 				else
 					connection = csValue;
 
-				
-				
 				using AppDbContext dbContext = new AppDbContext(connection, provider);
-				if (!dbContext.Database.CanConnect())
-					dbContext.Database.Migrate();
+				dbContext.Database.Migrate();
 
 				services.AddLogging()
 					.AddScoped(services => new AppDbContext(connection, provider))

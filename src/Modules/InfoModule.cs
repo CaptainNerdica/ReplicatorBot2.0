@@ -56,7 +56,12 @@ namespace ReplicatorBot.Modules
 			{
 				// Get the command Summary attribute information
 				string embedFieldText = command.Summary ?? "No description available\n";
-				embedBuilder.AddField(command.Name, embedFieldText);
+				string name;
+				if (command?.Module?.Group is not null)
+					name = $"{command?.Module?.Group} - {command.Name}";
+				else
+					name = command.Name;
+				embedBuilder.AddField(name, embedFieldText);
 			}
 
 			await ReplyAsync("Here's a list of commands and their description: ", false, embedBuilder.Build());
