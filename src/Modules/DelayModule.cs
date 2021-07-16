@@ -39,7 +39,7 @@ namespace ReplicatorBot.Modules
 			info.Delay = delay;
 			context.GuildInfo.Update(info);
 			context.SaveChanges();
-			await ReplyAsync($"Updated per character delay to {info.Prefix}ms");
+			await ReplyAsync($"Updated per character delay to {info.Delay}ms");
 		}
 
 		protected override void AfterExecute(CommandInfo info) => Logger.LogInformation("Executed Command \"{command}\" in {module}", info.Name, nameof(DelayModule));
