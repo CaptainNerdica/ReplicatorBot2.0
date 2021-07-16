@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -125,16 +126,15 @@ namespace ReplicatorBot
 
 		public static async Task SendRandomMessageAsync(Random rand, ISocketMessageChannel channel, GuildInfo info)
 		{
-			DateTime start = DateTime.UtcNow;
+			Stopwatch sw = Stopwatch.StartNew();
 			using var typing = channel.EnterTypingState();
 			if (info.Messages.Any())
 			{
 				int next = rand.Next(info.TargetMessageCount);
 				Message m = info.Messages.FirstOrDefault(m => m.Index == next);
-				DateTime end = DateTime.UtcNow;
-				TimeSpan messageDelay;
-				messageDelay = new TimeSpan(TimeSpan.TicksPerMillisecond * info.Delay * (info.FixedDelay ? 1 : m.Text.Length));
-				TimeSpan delay = messageDelay - (end - start);
+				sw.Stop();
+				TimeSpan messageDelay = new TimeSpan(TimeSpan.TicksPerMillisecond * info.Delay * (info.FixedDelay ? 1 : m.Text.Length));
+				TimeSpan delay = messageDelay - sw.Elapsed;
 				if (delay.Ticks < 0)
 					delay = default;
 				await Task.Delay(delay);
