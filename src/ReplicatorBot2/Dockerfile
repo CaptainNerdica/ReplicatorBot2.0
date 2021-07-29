@@ -17,4 +17,6 @@ RUN dotnet publish "ReplicatorBot2.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN mkdir /data
+RUN cat > /data/application.db
 ENTRYPOINT ["dotnet", "ReplicatorBot2.dll"]

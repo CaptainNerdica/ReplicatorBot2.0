@@ -20,15 +20,20 @@ namespace ReplicatorBot
 
 		public static IHostBuilder CreateHostBuilder(string[] args) =>
 			Host.CreateDefaultBuilder(args)
-			.ConfigureAppConfiguration((context, config) => config.AddCommandLine(args, new Dictionary<string, string>
+			.ConfigureAppConfiguration((context, config) =>
 			{
-				{ "-t", "Token" },
-				{ "--token", "Token" },
-				{ "-c", "ConnectionString" },
-				{ "--connection", "ConnectionString" },
-				{ "-p", "Provider" },
-				{ "--provider", "Provider" }
-			}))
+				if (context.HostingEnvironment.IsDevelopment())
+					config.AddJsonFile("secrets.json", true);
+				config.AddCommandLine(args, new Dictionary<string, string>
+				{
+					{ "-t", "Token" },
+					{ "--token", "Token" },
+					{ "-c", "ConnectionString" },
+					{ "--connection", "ConnectionString" },
+					{ "-p", "Provider" },
+					{ "--provider", "Provider" }
+				});
+			})
 			.ConfigureServices((context, services) =>
 			{
 
@@ -43,17 +48,17 @@ namespace ReplicatorBot
 				else
 					connection = csValue;
 
-				
-				
 				using AppDbContext dbContext = new AppDbContext(connection, provider);
 				if (!dbContext.Database.CanConnect())
-					dbContext.Database.Migrate();
+					dbContext.Database.EnsureDeleted();
+				dbContext.Database.Migrate();
 
 				services.AddLogging()
 					.AddScoped(services => new AppDbContext(connection, provider))
 					.AddSingleton(ConfigureClient(context.Configuration).GetAwaiter().GetResult())
 					.AddSingleton<CommandService>()
 					.AddSingleton<CommandHandler>()
+					.AddSingleton<InteractionHandler>()
 					.AddHostedService<Replicator>();
 			});
 		private static async Task<DiscordSocketClient> ConfigureClient(IConfiguration config)

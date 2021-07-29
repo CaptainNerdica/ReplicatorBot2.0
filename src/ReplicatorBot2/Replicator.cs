@@ -21,16 +21,18 @@ namespace ReplicatorBot
 	{
 		protected DiscordSocketClient Client { get; init; }
 		protected CommandHandler Commands { get; init; }
+		protected InteractionHandler InteractionHandler { get; init; }
 		protected ILogger<Replicator> Logger { get; init; }
 		protected IConfiguration Configuration { get; init; }
 		protected IServiceProvider Services { get; init; }
 
 		protected ICollection<ulong> AvailableServers { get; init; }
 
-		public Replicator(DiscordSocketClient client, CommandHandler commands, ILogger<Replicator> logger, IConfiguration config, IServiceProvider services)
+		public Replicator(DiscordSocketClient client, CommandHandler commands, InteractionHandler interactions, ILogger<Replicator> logger, IConfiguration config, IServiceProvider services)
 		{
 			Client = client;
 			Commands = commands;
+			InteractionHandler = interactions;
 			Logger = logger;
 			Configuration = config;
 			Services = services;
@@ -46,6 +48,10 @@ namespace ReplicatorBot
 			Client.JoinedGuild += JoinedGuildAsync;
 			Client.LeftGuild += LeftGuildAsync;
 			Client.MessageReceived += MessageReceievedAsync;
+			Client.InteractionCreated += InteractionHandler.InteractionCreated;
+			Client.ApplicationCommandCreated += InteractionHandler.ApplicationCommandCreated;
+			Client.ApplicationCommandUpdated += InteractionHandler.ApplicationCommandUpdated;
+			Client.ApplicationCommandDeleted += InteractionHandler.ApplicationCommandDeleted;
 
 			stoppingToken.Register(UnregisterCallbacks);
 			await Task.Delay(Timeout.Infinite, stoppingToken);
@@ -58,6 +64,10 @@ namespace ReplicatorBot
 			Client.JoinedGuild -= JoinedGuildAsync;
 			Client.LeftGuild -= LeftGuildAsync;
 			Client.MessageReceived -= MessageReceievedAsync;
+			Client.InteractionCreated -= InteractionHandler.InteractionCreated;
+			Client.ApplicationCommandCreated -= InteractionHandler.ApplicationCommandCreated;
+			Client.ApplicationCommandUpdated -= InteractionHandler.ApplicationCommandUpdated;
+			Client.ApplicationCommandDeleted -= InteractionHandler.ApplicationCommandDeleted;
 			Client.Log -= LogAsync;
 			Logger.LogInformation("Shutting down Replicator");
 		}
@@ -238,7 +248,7 @@ namespace ReplicatorBot
 			logger.LogInformation("Read all new messages in guild {name} ({id})", guild.Name, guild.Id);
 			await reply.SendMessageAsync("Read all new messages");
 		}
-
+		#region Guild Availability Handlers
 		private async Task GuildAvailableAsync(SocketGuild guild)
 		{
 			await AddGuildAsync(guild);
@@ -296,6 +306,7 @@ namespace ReplicatorBot
 				await context.SaveChangesAsync();
 			}
 		}
+		#endregion
 
 		private async Task LogAsync(LogMessage message) => await Task.Run(() => Logger.Log(message.Severity.ToLogLevel(), "{0}", message));
 	}
