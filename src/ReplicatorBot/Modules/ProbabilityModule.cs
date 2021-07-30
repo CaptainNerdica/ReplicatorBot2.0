@@ -23,33 +23,33 @@ namespace ReplicatorBot.Modules
 		public async Task GetProbabilityAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
 
-			await ReplyAsync($"Auto Update: {info.AutoUpdateProbability}, Probability: {info.Probability:P1}");
+			await ReplyAsync($"Auto Update: {config.AutoUpdateProbability}, Probability: {config.Probability:P1}");
 		}
 
 		[Command("set")]
 		public async Task SetProbabilityAsync(string input)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
 			if (input.Equals("auto", StringComparison.InvariantCultureIgnoreCase))
 			{
-				info.AutoUpdateProbability = true;
-				double d = (double)info.TargetMessageCount / info.GuildMessageCount;
-				info.Probability = double.IsNaN(d) ? 0 : d;
-				context.GuildInfo.Update(info);
+				config.AutoUpdateProbability = true;
+				double d = (double)config.TargetMessageCount / config.GuildMessageCount;
+				config.Probability = double.IsNaN(d) ? 0 : d;
+				context.GuildConfig.Update(config);
 				await ReplyAsync("Set probability to auto update");
 			}
 			else if (double.TryParse(input, out double d))
 			{
-				info.AutoUpdateProbability = false;
-				info.Probability = double.IsNaN(d) ? 0 : d; ;
-				context.GuildInfo.Update(info);
+				config.AutoUpdateProbability = false;
+				config.Probability = double.IsNaN(d) ? 0 : d; ;
+				context.GuildConfig.Update(config);
 				await ReplyAsync($"Set probability to {d:P1}");
 			}
 			else
@@ -57,6 +57,6 @@ namespace ReplicatorBot.Modules
 			context.SaveChanges();
 		}
 
-		protected override void AfterExecute(CommandInfo info) => Logger.LogInformation("Executed Command \"{command}\" in {module}", info.Name, nameof(EnabledModule));
+		protected override void AfterExecute(CommandInfo config) => Logger.LogInformation("Executed Command \"{command}\" in {module}", config.Name, nameof(EnabledModule));
 	}
 }

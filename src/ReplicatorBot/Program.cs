@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using DiscordBotCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,7 +37,6 @@ namespace ReplicatorBot
 			})
 			.ConfigureServices((context, services) =>
 			{
-
 				string csValue = context.Configuration.GetValue<string>("ConnectionString");
 				DbProvider provider = context.Configuration.GetValue("Provider", DbProvider.Sqlite);
 				string connection;
@@ -48,20 +48,21 @@ namespace ReplicatorBot
 				else
 					connection = csValue;
 
-				using AppDbContext dbContext = new AppDbContext(connection, provider);
+				using ReplicatorContext dbContext = new ReplicatorContext(connection, provider);
 				if (!dbContext.Database.CanConnect())
 					dbContext.Database.EnsureDeleted();
 				dbContext.Database.Migrate();
 
 				services.AddLogging()
-					.AddScoped(services => new AppDbContext(connection, provider))
-					.AddSingleton(ConfigureClient(context.Configuration).GetAwaiter().GetResult())
+					.AddScoped(services => new ReplicatorContext(connection, provider))
+					.AddSingleton(Task.Run(async() => await ConfigureClientAsync(context.Configuration)).Result)
 					.AddSingleton<CommandService>()
-					.AddSingleton<CommandHandler>()
-					.AddSingleton<InteractionHandler>()
+					.AddSingleton(provider => HandlerService.Instantiate<CommandHandler>(provider))
+					.AddSingleton(provider => HandlerService.Instantiate<InteractionHandler>(provider))
 					.AddHostedService<Replicator>();
 			});
-		private static async Task<DiscordSocketClient> ConfigureClient(IConfiguration config)
+
+		private static async Task<DiscordSocketClient> ConfigureClientAsync(IConfiguration config)
 		{
 			string token;
 			string fileConfig = config.GetValue<string>("TokenFile");

@@ -1,4 +1,5 @@
 ﻿using Discord;
+using DiscordBotCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Sqlite;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -10,39 +11,20 @@ using System.Threading.Tasks;
 
 namespace ReplicatorBot
 {
-	public enum DbProvider
-	{
-		Sqlite,
-		SqlServer,
-		InMemory
-	}
-	public class AppDbContext : DbContext
+	public class ReplicatorContext : BotDbBase
 	{
 		private readonly string _connectionString = "DataSource=/data/application.db";
 		private readonly DbProvider _provider = DbProvider.Sqlite;
 
-		/// <summary>
-		/// Creates a new database context.
-		/// </summary>
-		public AppDbContext() : base() { }
-		/// <summary>
-		/// Creates a new database context.
-		/// </summary>
-		/// <remarks>Database provider defaults to Sqlite</remarks>
-		/// <param name="connectionString">Connection string for this context</param>
-		public AppDbContext(string connectionString) : this(connectionString, DbProvider.Sqlite) { }
-		/// <summary>
-		/// Creates a new database context.
-		/// </summary>
-		/// <param name="connectionString">Connection string for this context.</param>
-		/// <param name="provider">Database provider to use.</param>
-		public AppDbContext(string connectionString, DbProvider provider) : base()
+		public ReplicatorContext() : base() { }
+		public ReplicatorContext(string connectionString) : this(connectionString, DbProvider.Sqlite) { }
+		public ReplicatorContext(string connectionString, DbProvider provider) : base()
 		{
 			_connectionString = connectionString;
 			_provider = provider;
 		}
 
-		public DbSet<GuildInfo> GuildInfo { get; set; }
+		public DbSet<GuildConfig> GuildConfig { get; set; }
 		public DbSet<ChannelPermissions> ChannelPermissions { get; set; }
 		public DbSet<DisabledSubstring> DisabledSubstrings { get; set; }
 		public DbSet<DisabledUser> DisabledUsers { get; set; }
@@ -55,21 +37,14 @@ namespace ReplicatorBot
 				v => unchecked((long)v),
 				v => unchecked((ulong)v));
 
-			builder.Entity<GuildInfo>(entity =>
+			builder.Entity<GuildConfig>(entity =>
 			{
-				entity.HasKey(e => e.GuildId);
-
-				entity.Property(e => e.GuildId)
-					.HasConversion(converter)
-					.ValueGeneratedNever();
-
-				entity.Property(e => e.Prefix)
-					.HasMaxLength(10)
-					.IsRequired();
-
 				entity.Property(e => e.TargetUserId)
 					.HasConversion(converter)
 					.ValueGeneratedNever();
+				entity.HasOne(e => e.Guild)
+					.WithOne()
+					.HasForeignKey<Guild>(e => e.GuildId);
 			});
 
 			builder.Entity<ChannelPermissions>(entity =>
@@ -87,7 +62,7 @@ namespace ReplicatorBot
 				entity.Property(e => e.Permissions)
 					.HasConversion(new EnumToNumberConverter<ChannelPermission, int>());
 
-				entity.HasOne(e => e.GuildInfo)
+				entity.HasOne(e => e.GuildConfig)
 					.WithMany(d => d.ChannelPermissions)
 					.HasForeignKey(e => e.GuildId)
 					.HasPrincipalKey(d => d.GuildId);
@@ -106,7 +81,7 @@ namespace ReplicatorBot
 					.HasMaxLength(200)
 					.IsRequired();
 
-				entity.HasOne(e => e.GuildInfo)
+				entity.HasOne(e => e.GuildConfig)
 					.WithMany(d => d.DisabledSubstrings)
 					.HasForeignKey(e => e.GuildId)
 					.HasPrincipalKey(d => d.GuildId);
@@ -124,7 +99,7 @@ namespace ReplicatorBot
 					.HasConversion(converter)
 					.ValueGeneratedNever();
 
-				entity.HasOne(e => e.GuildInfo)
+				entity.HasOne(e => e.GuildConfig)
 					.WithMany(d => d.DisabledUsers)
 					.HasForeignKey(e => e.GuildId)
 					.HasPrincipalKey(d => d.GuildId);
@@ -146,10 +121,10 @@ namespace ReplicatorBot
 					.IsUnique();
 
 				entity.Property(e => e.Text)
-					.HasMaxLength(2048)
+					.HasMaxLength(6144)
 					.IsRequired();
 
-				entity.HasOne(e => e.GuildInfo)
+				entity.HasOne(e => e.GuildConfig)
 					.WithMany(d => d.Messages)
 					.HasForeignKey(e => e.GuildId)
 					.HasPrincipalKey(d => d.GuildId);
@@ -178,11 +153,10 @@ namespace ReplicatorBot
 		}
 	}
 
-	public class GuildInfo
+	public class GuildConfig
 	{
 		public ulong GuildId { get; set; }
 		public bool Enabled { get; set; }
-		public string Prefix { get; set; }
 		public ulong? TargetUserId { get; set; }
 		public int GuildMessageCount { get; set; }
 		public int TargetMessageCount { get; set; }
@@ -193,19 +167,15 @@ namespace ReplicatorBot
 		public bool CanEmbed { get; set; }
 		public DateTime LastUpdate { get; set; }
 
-		public GuildInfo() { }
-
-		public GuildInfo(ulong guildId)
+		public GuildConfig(ulong guildId)
 		{
 			GuildId = guildId;
-			Prefix = "!";
 		}
 
-		public GuildInfo(ulong guildId, bool enabled, string prefix, ulong? targetUserId, int guildMessageCount, int targetMessageCount, double probability, bool autoUpdateProbability, bool canMention, bool canEmbed, DateTime lastUpdate)
+		public GuildConfig(ulong guildId, bool enabled, ulong? targetUserId, int guildMessageCount, int targetMessageCount, double probability, bool autoUpdateProbability, bool canMention, bool canEmbed, DateTime lastUpdate)
 		{
 			GuildId = guildId;
 			Enabled = enabled;
-			Prefix = prefix;
 			TargetUserId = targetUserId;
 			GuildMessageCount = guildMessageCount;
 			TargetMessageCount = targetMessageCount;
@@ -216,6 +186,7 @@ namespace ReplicatorBot
 			LastUpdate = lastUpdate;
 		}
 
+		public virtual Guild Guild { get; set; }
 		public virtual ICollection<ChannelPermissions> ChannelPermissions { get; set; } = new HashSet<ChannelPermissions>();
 		public virtual ICollection<DisabledUser> DisabledUsers { get; set; } = new HashSet<DisabledUser>();
 		public virtual ICollection<DisabledSubstring> DisabledSubstrings { get; set; } = new HashSet<DisabledSubstring>();
@@ -243,7 +214,7 @@ namespace ReplicatorBot
 			Permissions = permissions;
 		}
 
-		public virtual GuildInfo GuildInfo { get; set; }
+		public virtual GuildConfig GuildConfig { get; set; }
 	}
 
 	public class DisabledUser
@@ -257,7 +228,7 @@ namespace ReplicatorBot
 			UserId = userId;
 		}
 
-		public virtual GuildInfo GuildInfo { get; set; }
+		public virtual GuildConfig GuildConfig { get; set; }
 	}
 
 	public class DisabledSubstring
@@ -273,7 +244,7 @@ namespace ReplicatorBot
 			Substring = substring;
 		}
 
-		public virtual GuildInfo GuildInfo { get; set; }
+		public virtual GuildConfig GuildConfig { get; set; }
 	}
 
 	public class Message
@@ -291,6 +262,6 @@ namespace ReplicatorBot
 			Text = text;
 		}
 
-		public virtual GuildInfo GuildInfo { get; set; }
+		public virtual GuildConfig GuildConfig { get; set; }
 	}
 }

@@ -24,7 +24,7 @@ namespace ReplicatorBot.Modules
 		public async Task ListDisabledAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
 			SocketGuild guild = Context.Guild;
 			IEnumerable<DisabledUser> disabledUsers = context.DisabledUsers.AsQueryable().Where(d => d.GuildId == guild.Id).AsEnumerable();
@@ -48,7 +48,7 @@ namespace ReplicatorBot.Modules
 		public async Task AddDisabledAsync(IUser user)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
 			if (context.DisabledUsers.AsQueryable().Where(d => d.GuildId == Context.Guild.Id && d.UserId == user.Id).Any())
 			{
@@ -67,7 +67,7 @@ namespace ReplicatorBot.Modules
 		public async Task RemoveDisabledAsync(IUser user)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			DisabledUser u = context.DisabledUsers.FirstOrDefault(d => d.GuildId == Context.Guild.Id && d.UserId == user.Id);
 			if (u is null)
 			{

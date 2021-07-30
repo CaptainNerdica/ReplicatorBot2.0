@@ -23,8 +23,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PythonScripts.pyproj" />
-    <Compile Include="command-test-870207465977962496.json" />
-    <Compile Include="PythonScripts.pyproj" />
     <Compile Include="slash_command_gen.py" />
     <Compile Include="test.json" />
   </ItemGroup>

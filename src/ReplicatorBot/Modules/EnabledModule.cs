@@ -23,10 +23,10 @@ namespace ReplicatorBot.Modules
 		public async Task SetEnabled()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			info.Enabled = true;
-			context.GuildInfo.Update(info);
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			config.Enabled = true;
+			context.GuildConfig.Update(config);
 			context.SaveChanges();
 			await ReplyAsync("Enabled Replicator.");
 		}
@@ -36,10 +36,10 @@ namespace ReplicatorBot.Modules
 		public async Task SetDisabled()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			info.Enabled = false;
-			context.GuildInfo.Update(info);
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			config.Enabled = false;
+			context.GuildConfig.Update(config);
 			context.SaveChanges();
 			await ReplyAsync("Enabled Replicator.");
 		}
@@ -61,10 +61,10 @@ namespace ReplicatorBot.Modules
 		public async Task GetCanMention()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			await ReplyAsync($"Can mention: {info.CanMention}");
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			await ReplyAsync($"Can mention: {config.CanMention}");
 		}
 
 		[Command("set")]
@@ -72,13 +72,13 @@ namespace ReplicatorBot.Modules
 		public async Task SetCanMention(bool canMention)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			info.CanMention = canMention;
-			context.GuildInfo.Update(info);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			config.CanMention = canMention;
+			context.GuildConfig.Update(config);
 			context.SaveChanges();
-			await ReplyAsync($"Updated can mention to: {info.CanMention}");
+			await ReplyAsync($"Updated can mention to: {config.CanMention}");
 		}
 
 		protected override void AfterExecute(CommandInfo info) => Logger.LogInformation("Executed Command \"{command}\" in {module}", info.Name, nameof(MentionsModule));
@@ -98,10 +98,10 @@ namespace ReplicatorBot.Modules
 		public async Task GetCanEmbed()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			await ReplyAsync($"Can embed: {info.CanEmbed}");
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			await ReplyAsync($"Can embed: {config.CanEmbed}");
 		}
 
 		[Command("set")]
@@ -109,13 +109,13 @@ namespace ReplicatorBot.Modules
 		public async Task SetCanEmbed(bool canEmbed)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			info.CanEmbed = canEmbed;
-			context.GuildInfo.Update(info);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			config.CanEmbed = canEmbed;
+			context.GuildConfig.Update(config);
 			context.SaveChanges();
-			await ReplyAsync($"Updated can embed to: {info.CanEmbed}");
+			await ReplyAsync($"Updated can embed to: {config.CanEmbed}");
 		}
 
 		protected override void AfterExecute(CommandInfo info) => Logger.LogInformation("Executed Command \"{command}\" in {module}", info.Name, nameof(EmbedsModule));

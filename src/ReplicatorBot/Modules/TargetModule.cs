@@ -24,15 +24,15 @@ namespace ReplicatorBot.Modules
 		public async Task GetTargetAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			if (info.TargetUserId is null)
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			if (config.TargetUserId is null)
 			{
 				await ReplyAsync("Target user not set");
 				return;
 			}
-			IGuildUser user = Context.Guild.GetUser(info.TargetUserId ?? 0);
+			IGuildUser user = Context.Guild.GetUser(config.TargetUserId ?? 0);
 			await ReplyAsync($"Current target user: {user.Mention}", allowedMentions: AllowedMentions.None);
 		}
 
@@ -42,14 +42,14 @@ namespace ReplicatorBot.Modules
 		public async Task SetTargetAsync(IUser user)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			info.TargetUserId = user.Id;
-			info.Enabled = false;
-			info.TargetMessageCount = 0;
-			context.Messages.RemoveRange(info.Messages);
-			context.GuildInfo.Update(info);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			config.TargetUserId = user.Id;
+			config.Enabled = false;
+			config.TargetMessageCount = 0;
+			context.Messages.RemoveRange(config.Messages);
+			context.GuildConfig.Update(config);
 			await context.SaveChangesAsync();
 
 			await ReplyAsync($"Set current target user to: {user.Mention}", allowedMentions: AllowedMentions.None);
@@ -62,9 +62,9 @@ namespace ReplicatorBot.Modules
 		public async Task SetTargetAsync(ulong id)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
 			await Context.Guild.DownloadUsersAsync();
 			var user = Context.Guild.GetUser(id);
 			if (user is null)
@@ -72,11 +72,11 @@ namespace ReplicatorBot.Modules
 				await ReplyAsync($"Could not find user with id {id}");
 				return;
 			}
-			info.TargetUserId = user.Id;
-			info.Enabled = false;
-			info.TargetMessageCount = 0;
-			context.Messages.RemoveRange(info.Messages);
-			context.GuildInfo.Update(info);
+			config.TargetUserId = user.Id;
+			config.Enabled = false;
+			config.TargetMessageCount = 0;
+			context.Messages.RemoveRange(config.Messages);
+			context.GuildConfig.Update(config);
 			await context.SaveChangesAsync();
 
 			await ReplyAsync($"Set current target user to: {user.Mention}", allowedMentions: AllowedMentions.None);
@@ -89,14 +89,14 @@ namespace ReplicatorBot.Modules
 		public async Task ClearTargetAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			info.TargetUserId = null;
-			info.Enabled = false;
-			info.TargetMessageCount = 0;
-			context.Messages.RemoveRange(info.Messages);
-			context.GuildInfo.Update(info);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			config.TargetUserId = null;
+			config.Enabled = false;
+			config.TargetMessageCount = 0;
+			context.Messages.RemoveRange(config.Messages);
+			context.GuildConfig.Update(config);
 			await context.SaveChangesAsync();
 
 			await ReplyAsync($"Cleared target user", allowedMentions: AllowedMentions.None);

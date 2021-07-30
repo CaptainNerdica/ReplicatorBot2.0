@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
 	<PropertyGroup>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<UserSecretsId>dotnet-ReplicatorBot2.0-EDA66423-B5E7-4FD7-8A5D-D2B75F3FD9D5</UserSecretsId>
 		<RootNamespace>ReplicatorBot</RootNamespace>
-		<AssemblyName>ReplicatorBot2</AssemblyName>
+		<AssemblyName>ReplicatorBot</AssemblyName>
 		<Authors>Aidan Orr</Authors>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<DockerfileContext>.</DockerfileContext>
+		<Version>2.1.0-beta</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -37,5 +38,9 @@
 
 	<ItemGroup>
 	  <Folder Include="SlashCommands\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\DiscordBotCore\DiscordBotCore.csproj" />
 	</ItemGroup>
 </Project>

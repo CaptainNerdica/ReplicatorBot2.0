@@ -1,5 +1,6 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
+using DiscordBotCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -24,9 +25,9 @@ namespace ReplicatorBot.Modules
 		public async Task GetPrefixAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
-			await ReplyAsync($"Current Prefix: \"{info.Prefix}\"");
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
+			Guild guild = context.Guild.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			await ReplyAsync($"Current Prefix: \"{guild.Prefix}\"");
 		}
 
 		[Command("set")]
@@ -34,8 +35,8 @@ namespace ReplicatorBot.Modules
 		public async Task SetPrefixAsync(string prefix)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
+			Guild guild = context.Guild.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
 			if (prefix.Length > 10)
 			{
 				await ReplyAsync("Prefix cannot be longer than 10 characters.");
@@ -46,10 +47,10 @@ namespace ReplicatorBot.Modules
 				await ReplyAsync("Prefix cannot be empty.");
 				return;
 			}
-			info.Prefix = prefix;
-			context.GuildInfo.Update(info);
+			guild.Prefix = prefix;
+			context.Guild.Update(guild);
 			context.SaveChanges();
-			await ReplyAsync($"Updated prefix to \"{info.Prefix}\"");
+			await ReplyAsync($"Updated prefix to \"{guild.Prefix}\"");
 		}
 
 		protected override void AfterExecute(CommandInfo info) => Logger.LogInformation("Executed Command \"{command}\" in {module}", info.Name, nameof(PrefixModule));

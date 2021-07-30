@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using DiscordBotCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,16 +43,11 @@ namespace ReplicatorBot
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 		{
 			Client.Log += LogAsync;
-			await Commands.InstallCommandsAsync();
 			Client.GuildAvailable += GuildAvailableAsync;
 			Client.GuildUnavailable += GuildUnavailableAsync;
 			Client.JoinedGuild += JoinedGuildAsync;
 			Client.LeftGuild += LeftGuildAsync;
 			Client.MessageReceived += MessageReceievedAsync;
-			Client.InteractionCreated += InteractionHandler.InteractionCreated;
-			Client.ApplicationCommandCreated += InteractionHandler.ApplicationCommandCreated;
-			Client.ApplicationCommandUpdated += InteractionHandler.ApplicationCommandUpdated;
-			Client.ApplicationCommandDeleted += InteractionHandler.ApplicationCommandDeleted;
 
 			stoppingToken.Register(UnregisterCallbacks);
 			await Task.Delay(Timeout.Infinite, stoppingToken);
@@ -64,10 +60,6 @@ namespace ReplicatorBot
 			Client.JoinedGuild -= JoinedGuildAsync;
 			Client.LeftGuild -= LeftGuildAsync;
 			Client.MessageReceived -= MessageReceievedAsync;
-			Client.InteractionCreated -= InteractionHandler.InteractionCreated;
-			Client.ApplicationCommandCreated -= InteractionHandler.ApplicationCommandCreated;
-			Client.ApplicationCommandUpdated -= InteractionHandler.ApplicationCommandUpdated;
-			Client.ApplicationCommandDeleted -= InteractionHandler.ApplicationCommandDeleted;
 			Client.Log -= LogAsync;
 			Logger.LogInformation("Shutting down Replicator");
 		}
@@ -78,40 +70,40 @@ namespace ReplicatorBot
 				return;
 
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.AsQueryable().Include(g => g.ChannelPermissions).FirstOrDefault(g => g.GuildId == guild.Id);
-			ChannelPermissions permissions = info.ChannelPermissions.FirstOrDefault(c => c.GuildId == guild.Id && c.ChannelId == message.Channel.Id);
+			GuildConfig config = context.GuildConfig.AsQueryable().Include(g => g.ChannelPermissions).FirstOrDefault(g => g.GuildId == guild.Id);
+			ChannelPermissions permissions = config.ChannelPermissions.FirstOrDefault(c => c.GuildId == guild.Id && c.ChannelId == message.Channel.Id);
 			if (permissions is null)
 				permissions = context.ChannelPermissions.Add(new ChannelPermissions(guild.Id, message.Channel.Id, ChannelPermission.ReadWrite)).Entity;
 			Discord.ChannelPermissions channelPerms = guild.GetUser(Client.CurrentUser.Id).GetPermissions(message.Channel as IGuildChannel);
 
-			if (info.Enabled && (string.IsNullOrEmpty(message.Content) || message.Content[0] != '!'))
+			if (config.Enabled && (string.IsNullOrEmpty(message.Content) || message.Content[0] != '!'))
 			{
-				info.LastUpdate = DateTime.UtcNow;
+				config.LastUpdate = DateTime.UtcNow;
 				if (channelPerms.ViewChannel)
 				{
 					if (!message.Author.IsBot && channelPerms.ReadMessageHistory && permissions.Permissions.HasFlag(ChannelPermission.Read))
 					{
-						info.GuildMessageCount += 1;
-						if (TestMessageStorable(message, info))
-							AddNewMessage(context, message, info);
+						config.GuildMessageCount += 1;
+						if (TestMessageStorable(message, config))
+							AddNewMessage(context, message, config);
 					}
-					if (channelPerms.SendMessages && permissions.Permissions.HasFlag(ChannelPermission.Write) && !info.DisabledUsers.Where(d => d.UserId == message.Author.Id).Any())
+					if (channelPerms.SendMessages && permissions.Permissions.HasFlag(ChannelPermission.Write) && !config.DisabledUsers.Where(d => d.UserId == message.Author.Id).Any())
 					{
 						Random rand = new Random();
 						if (message.MentionedUsers.Select(u => u.Id).Contains(Client.CurrentUser.Id))
-							await SendRandomMessageAsync(rand, message.Channel, info);
-						if (rand.NextDouble() < info.Probability)
-							await SendRandomMessageAsync(rand, message.Channel, info);
+							await SendRandomMessageAsync(rand, message.Channel, config);
+						if (rand.NextDouble() < config.Probability)
+							await SendRandomMessageAsync(rand, message.Channel, config);
 					}
 				}
-				context.GuildInfo.Update(info);
+				context.GuildConfig.Update(config);
 			}
 			context.SaveChanges();
 		}
 
-		private static void AddNewMessage(AppDbContext context, IMessage message, GuildInfo info, bool save = true)
+		private static void AddNewMessage(ReplicatorContext context, IMessage message, GuildConfig config, bool save = true)
 		{
 			string content;
 			if (message.Attachments.Any())
@@ -123,44 +115,44 @@ namespace ReplicatorBot
 			else
 				content = message.Content;
 
-			Message m = new Message(info.GuildId, message.Id, info.TargetMessageCount, content);
-			info.TargetMessageCount += 1;
+			Message m = new Message(config.GuildId, message.Id, config.TargetMessageCount, content);
+			config.TargetMessageCount += 1;
 			context.Messages.Add(m);
-			if (info.AutoUpdateProbability)
-				info.Probability = (double)info.TargetMessageCount / info.GuildMessageCount;
-			context.GuildInfo.Update(info);
+			if (config.AutoUpdateProbability)
+				config.Probability = (double)config.TargetMessageCount / config.GuildMessageCount;
+			context.GuildConfig.Update(config);
 			if (save)
 				context.SaveChanges();
 		}
 
-		public static async Task SendRandomMessageAsync(Random rand, ISocketMessageChannel channel, GuildInfo info)
+		public static async Task SendRandomMessageAsync(Random rand, ISocketMessageChannel channel, GuildConfig config)
 		{
 			using var typing = channel.EnterTypingState();
-			if (info.Messages.Any())
+			if (config.Messages.Any())
 			{
-				int next = rand.Next(info.TargetMessageCount);
-				Message m = info.Messages.FirstOrDefault(m => m.Index == next);
-				await channel.SendMessageAsync(m.Text, allowedMentions: info.CanMention ? AllowedMentions.All : AllowedMentions.None);
+				int next = rand.Next(config.TargetMessageCount);
+				Message m = config.Messages.FirstOrDefault(m => m.Index == next);
+				await channel.SendMessageAsync(m.Text, allowedMentions: config.CanMention ? AllowedMentions.All : AllowedMentions.None);
 			}
 			else
 				await channel.SendMessageAsync("No stored messages.");
 		}
 
-		private static bool TestMessageStorable(IMessage message, GuildInfo info)
+		private static bool TestMessageStorable(IMessage message, GuildConfig config)
 		{
-			bool author = message.Author.Id == info.TargetUserId;
-			bool embeds = info.CanEmbed || !(message.Embeds.Any() || message.Attachments.Any());
-			bool substrings = !message.Content.ContainsAny(info.DisabledSubstrings.Select(i => i.Substring));
+			bool author = message.Author.Id == config.TargetUserId;
+			bool embeds = config.CanEmbed || !(message.Embeds.Any() || message.Attachments.Any());
+			bool substrings = !message.Content.ContainsAny(config.DisabledSubstrings.Select(i => i.Substring));
 			return author && embeds && substrings;
 		}
 
-		internal static async Task ReadAllMessages(AppDbContext context, ILogger logger, DiscordSocketClient client, SocketGuild guild, int maxChannelRead, ISocketMessageChannel reply)
+		internal static async Task ReadAllMessages(ReplicatorContext context, ILogger logger, DiscordSocketClient client, SocketGuild guild, int maxChannelRead, ISocketMessageChannel reply)
 		{
-			GuildInfo info = context.GuildInfo.Include(g => g.ChannelPermissions).FirstOrDefault(g => g.GuildId == guild.Id);
-			info.GuildMessageCount = 0;
-			info.LastUpdate = default;
-			info.TargetMessageCount = 0;
-			if (info.TargetUserId is null)
+			GuildConfig config = context.GuildConfig.Include(g => g.ChannelPermissions).FirstOrDefault(g => g.GuildId == guild.Id);
+			config.GuildMessageCount = 0;
+			config.LastUpdate = default;
+			config.TargetMessageCount = 0;
+			if (config.TargetUserId is null)
 			{
 				await reply.SendMessageAsync("Target user not selected");
 				return;
@@ -173,7 +165,7 @@ namespace ReplicatorBot
 				logger.LogInformation($"Attempting to read messages in channel {channel.Name} ({channel.Id})");
 				await reply.SendMessageAsync($"Attempting to read messages in channel {channel.Mention}");
 				Discord.ChannelPermissions permissions = currentUser.GetPermissions(channel);
-				ChannelPermissions perms = info.ChannelPermissions.FirstOrDefault(c => c.ChannelId == channel.Id) ?? context.ChannelPermissions.Add(new ChannelPermissions(guild.Id, channel.Id, ChannelPermission.ReadWrite)).Entity;
+				ChannelPermissions perms = config.ChannelPermissions.FirstOrDefault(c => c.ChannelId == channel.Id) ?? context.ChannelPermissions.Add(new ChannelPermissions(guild.Id, channel.Id, ChannelPermission.ReadWrite)).Entity;
 				if (permissions.ReadMessageHistory && permissions.ViewChannel && perms.Permissions.HasFlag(ChannelPermission.Read))
 				{
 					var messageCollection = channel.GetMessagesAsync(maxChannelRead).Flatten();
@@ -181,27 +173,27 @@ namespace ReplicatorBot
 					{
 						if (string.IsNullOrEmpty(message.Content) || message.Content[0] != '!')
 						{
-							info.GuildMessageCount++;
-							if (TestMessageStorable(message, info))
-								AddNewMessage(context, message, info, false);
+							config.GuildMessageCount++;
+							if (TestMessageStorable(message, config))
+								AddNewMessage(context, message, config, false);
 						}
 					}
 				}
 				else
 					await reply.SendMessageAsync($"No permission to read in channel {channel.Mention}");
 			}
-			info.Enabled = true;
-			info.LastUpdate = DateTime.UtcNow;
-			context.GuildInfo.Update(info);
+			config.Enabled = true;
+			config.LastUpdate = DateTime.UtcNow;
+			context.GuildConfig.Update(config);
 			await context.SaveChangesAsync();
 			logger.LogInformation("Read all messages in guild {name} ({id})", guild.Name, guild.Id);
 			await reply.SendMessageAsync($"Read all messages and {currentUser.Mention} is now active");
 		}
 
-		internal static async Task ReadSinceTimestamp(AppDbContext context, ILogger logger, DiscordSocketClient client, SocketGuild guild, DateTime lastReceivedTime, ISocketMessageChannel reply)
+		internal static async Task ReadSinceTimestamp(ReplicatorContext context, ILogger logger, DiscordSocketClient client, SocketGuild guild, DateTime lastReceivedTime, ISocketMessageChannel reply)
 		{
 			logger.LogInformation("Read new messages");
-			GuildInfo info = context.GuildInfo.Include(g => g.ChannelPermissions).FirstOrDefault(g => g.GuildId == guild.Id);
+			GuildConfig config = context.GuildConfig.Include(g => g.ChannelPermissions).FirstOrDefault(g => g.GuildId == guild.Id);
 			HashSet<ulong> messageIds = context.Messages.AsQueryable().Where(m => m.GuildId == guild.Id).Select(m => m.MessageId).ToHashSet();
 
 			IGuildUser currentUser = guild.GetUser(client.CurrentUser.Id);
@@ -210,7 +202,7 @@ namespace ReplicatorBot
 				logger.LogInformation($"Reading new messages in channel {channel.Mention}");
 				await reply.SendMessageAsync($"Reading new messages in channel {channel.Mention}");
 				Discord.ChannelPermissions permissions = currentUser.GetPermissions(channel);
-				ChannelPermissions perms = info.ChannelPermissions.FirstOrDefault(c => c.ChannelId == channel.Id) ?? context.ChannelPermissions.Add(new ChannelPermissions(guild.Id, channel.Id, ChannelPermission.ReadWrite)).Entity;
+				ChannelPermissions perms = config.ChannelPermissions.FirstOrDefault(c => c.ChannelId == channel.Id) ?? context.ChannelPermissions.Add(new ChannelPermissions(guild.Id, channel.Id, ChannelPermission.ReadWrite)).Entity;
 				if (permissions.ReadMessageHistory && permissions.ViewChannel && perms.Permissions.HasFlag(ChannelPermission.Read))
 				{
 					IMessage lastMessage = (await channel.GetMessagesAsync(1).Flatten().FirstAsync());
@@ -230,9 +222,9 @@ namespace ReplicatorBot
 										break;
 									if (messageIds.Contains(lastMessage.Id))
 										break;
-									info.GuildMessageCount += 1;
-									if (TestMessageStorable(message, info))
-										AddNewMessage(context, lastMessage, info, false);
+									config.GuildMessageCount += 1;
+									if (TestMessageStorable(message, config))
+										AddNewMessage(context, lastMessage, config, false);
 								}
 							}
 						}
@@ -241,9 +233,9 @@ namespace ReplicatorBot
 				else
 					await reply.SendMessageAsync($"No permission to read in channel {channel.Mention}");
 			}
-			info.Enabled = true;
-			info.LastUpdate = DateTime.UtcNow;
-			context.GuildInfo.Update(info);
+			config.Enabled = true;
+			config.LastUpdate = DateTime.UtcNow;
+			context.GuildConfig.Update(config);
 			await context.SaveChangesAsync();
 			logger.LogInformation("Read all new messages in guild {name} ({id})", guild.Name, guild.Id);
 			await reply.SendMessageAsync("Read all new messages");
@@ -280,11 +272,12 @@ namespace ReplicatorBot
 		private async Task AddGuildAsync(SocketGuild guild)
 		{
 			using var scope = Services.CreateScope();
-			using var context = scope.ServiceProvider.GetService<AppDbContext>();
+			using var context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			if (!await context.GuildInfo.AsAsyncEnumerable().Select(g => g.GuildId).ContainsAsync(guild.Id))
+			if (!await context.Guild.AsAsyncEnumerable().Select(g => g.GuildId).ContainsAsync(guild.Id))
 			{
-				context.GuildInfo.Add(new GuildInfo(guild.Id));
+				context.Guild.Add(new Guild(guild.Id));
+				context.GuildConfig.Add(new GuildConfig(guild.Id));
 				context.ChannelPermissions.AddRange(guild.Channels.Select(c => new ChannelPermissions(guild.Id, c.Id, ChannelPermission.ReadWrite)));
 				await context.SaveChangesAsync();
 			}
@@ -293,18 +286,20 @@ namespace ReplicatorBot
 		private async Task RemoveGuildAsync(SocketGuild guild)
 		{
 			using var scope = Services.CreateScope();
-			using var context = scope.ServiceProvider.GetService<AppDbContext>();
+			using var context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = await context.GuildInfo.AsAsyncEnumerable().Where(g => g.GuildId == guild.Id).FirstOrDefaultAsync();
+			GuildConfig info = await context.GuildConfig.AsAsyncEnumerable().Where(g => g.GuildId == guild.Id).FirstOrDefaultAsync();
 			if (info is not null)
 			{
 				context.Messages.RemoveRange(info.Messages);
 				context.ChannelPermissions.RemoveRange(info.ChannelPermissions);
 				context.DisabledUsers.RemoveRange(info.DisabledUsers);
 				context.DisabledSubstrings.RemoveRange(info.DisabledSubstrings);
-				context.GuildInfo.Remove(info);
-				await context.SaveChangesAsync();
+				context.GuildConfig.Remove(info);
 			}
+			Guild g = await context.Guild.AsAsyncEnumerable().FirstOrDefaultAsync(g => g.GuildId == guild.Id);
+			context.Guild.Remove(g);
+			await context.SaveChangesAsync();
 		}
 		#endregion
 

@@ -24,9 +24,9 @@ namespace ReplicatorBot.Modules
 		public async Task SendRandomMessageAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			await Replicator.SendRandomMessageAsync(new Random(), Context.Channel, context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id));
+			await Replicator.SendRandomMessageAsync(new Random(), Context.Channel, context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id));
 		}
 
 		[Command("ping")]

@@ -35,7 +35,7 @@ namespace ReplicatorBot.Modules
 		public async Task GetChannelPermsAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			ChannelPermissions channel = context.ChannelPermissions.FirstOrDefault(c => c.ChannelId == Context.Channel.Id && c.GuildId == Context.Guild.Id);
 			await ReplyAsync($"Permissions for channel {(Context.Guild.GetChannel(Context.Channel.Id) as ITextChannel).Mention}: {GetPermsString(channel.Permissions)}");
 		}
@@ -45,7 +45,7 @@ namespace ReplicatorBot.Modules
 		public async Task GetChannelPermsAsync(ITextChannel channel)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			ChannelPermissions perms = context.ChannelPermissions.FirstOrDefault(c => c.ChannelId == channel.Id && c.GuildId == Context.Guild.Id);
 			await ReplyAsync($"Permissions for channel {(Context.Guild.GetChannel(channel.Id) as ITextChannel).Mention}: {GetPermsString(perms.Permissions)}");
 		}
@@ -55,7 +55,7 @@ namespace ReplicatorBot.Modules
 		public async Task SetChannelPermsAsync(string newPerms)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			ChannelPermissions perms = context.ChannelPermissions.FirstOrDefault(c => c.ChannelId == Context.Channel.Id && c.GuildId == Context.Guild.Id);
 			if (perms is null)
 			{
@@ -80,7 +80,7 @@ namespace ReplicatorBot.Modules
 		public async Task SetChannelPermsAsync(ITextChannel channel, string newPerms)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			ChannelPermissions perms = context.ChannelPermissions.FirstOrDefault(c => c.ChannelId == channel.Id && c.GuildId == Context.Guild.Id);
 			if (perms is null)
 			{
@@ -104,7 +104,7 @@ namespace ReplicatorBot.Modules
 		public async Task ListPermissionsAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			IQueryable<ChannelPermissions> perms = context.ChannelPermissions.AsQueryable().Where(c => c.GuildId == Context.Guild.Id);
 
 			var embedBuilder = new EmbedBuilder

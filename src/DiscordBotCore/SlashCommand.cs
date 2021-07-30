@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ReplicatorBot
+namespace DiscordBotCore
 {
 	/// <summary>
 	/// Base class to use for slash command building and executing.
@@ -14,6 +14,7 @@ namespace ReplicatorBot
 	public abstract class SlashCommand
 	{
 		public virtual string Name { get; }
+
 		public abstract SlashCommandCreationProperties BuildGlobalCommand(SlashCommandBuilder builder);
 		public abstract Task ExecuteCommandAsync(SocketSlashCommand command);
 	}
@@ -21,11 +22,11 @@ namespace ReplicatorBot
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
 	public class SlashCommandAttribute : Attribute
 	{
-		public string Name { get; init; }
+		public string CommandName { get; init; }
 
-		public SlashCommandAttribute(string name)
+		public SlashCommandAttribute(string commandName)
 		{
-			Name = name;
+			CommandName = commandName;
 		}
 	}
 }

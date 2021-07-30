@@ -24,11 +24,11 @@ namespace ReplicatorBot.Modules
 		public async Task UpdateAsync()
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
-			GuildInfo info = context.GuildInfo.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
+			GuildConfig config = context.GuildConfig.FirstOrDefault(g => g.GuildId == Context.Guild.Id);
 
-			await Replicator.ReadSinceTimestamp(context, Logger, Client, Context.Guild, info.LastUpdate, Context.Channel);
+			await Replicator.ReadSinceTimestamp(context, Logger, Client, Context.Guild, config.LastUpdate, Context.Channel);
 		}
 
 		[Command("all", RunMode = RunMode.Async)]
@@ -36,7 +36,7 @@ namespace ReplicatorBot.Modules
 		public async Task ReadAllAsync(int max = 1000000)
 		{
 			using IServiceScope scope = Services.CreateScope();
-			using AppDbContext context = scope.ServiceProvider.GetService<AppDbContext>();
+			using ReplicatorContext context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
 			await Replicator.ReadAllMessages(context, Logger, Client, Context.Guild, max, Context.Channel);
 		}

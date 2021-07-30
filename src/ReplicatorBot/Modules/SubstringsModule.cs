@@ -24,7 +24,7 @@ namespace ReplicatorBot.Modules
 		public async Task ListDisabledSubstringsAsync()
 		{
 			using var scope = Services.CreateScope();
-			using var context = scope.ServiceProvider.GetService<AppDbContext>();
+			using var context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
 			IQueryable<DisabledSubstring> substrings = context.DisabledSubstrings.AsQueryable().Where(d => d.GuildId == Context.Guild.Id).OrderBy(d => d.Index);
 
@@ -45,7 +45,7 @@ namespace ReplicatorBot.Modules
 		public async Task AddDisabledSubstringAsync([Remainder] string substring)
 		{
 			using var scope = Services.CreateScope();
-			using var context = scope.ServiceProvider.GetService<AppDbContext>();
+			using var context = scope.ServiceProvider.GetService<ReplicatorContext>();
 
 			int count = context.DisabledSubstrings.AsQueryable().Where(d => d.GuildId == Context.Guild.Id).Count();
 			DisabledSubstring d = new DisabledSubstring(Context.Guild.Id, count, substring);
@@ -61,7 +61,7 @@ namespace ReplicatorBot.Modules
 		public async Task RemoveDisabledSubstringAsync(int index)
 		{
 			using var scope = Services.CreateScope();
-			using var context = scope.ServiceProvider.GetService<AppDbContext>();
+			using var context = scope.ServiceProvider.GetService<ReplicatorContext>();
 			DisabledSubstring d = context.DisabledSubstrings.AsQueryable().FirstOrDefault(d => d.GuildId == Context.Guild.Id && d.Index == index);
 			if (d is null)
 			{
