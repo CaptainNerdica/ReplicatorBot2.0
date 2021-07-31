@@ -22,22 +22,13 @@
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="5.0.8" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.8" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.8" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="5.0.8" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
-		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.14" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <Content Update="secrets.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </Content>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="SlashCommands\" />
 	</ItemGroup>
 
 	<ItemGroup>

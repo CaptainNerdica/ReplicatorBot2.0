@@ -5,9 +5,13 @@ VisualStudioVersion = 17.0.31521.260
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReplicatorBot", "ReplicatorBot\ReplicatorBot.csproj", "{2181721B-B5E2-402F-B6A8-62DA079FBD2F}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PythonScripts", "PythonScripts\PythonScripts.pyproj", "{DD5B3EA6-D2DB-4533-BF2B-D08D88D2F350}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DiscordBotCore", "DiscordBotCore\DiscordBotCore.csproj", "{77A2FC59-6739-4DC0-9CC7-98913CB506BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordBotCore", "DiscordBotCore\DiscordBotCore.csproj", "{77A2FC59-6739-4DC0-9CC7-98913CB506BE}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{755B33EB-61A1-4FC1-8188-4C9251E59E1B}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		Dockerfile = Dockerfile
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,8 +23,6 @@ Global
 		{2181721B-B5E2-402F-B6A8-62DA079FBD2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2181721B-B5E2-402F-B6A8-62DA079FBD2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2181721B-B5E2-402F-B6A8-62DA079FBD2F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD5B3EA6-D2DB-4533-BF2B-D08D88D2F350}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DD5B3EA6-D2DB-4533-BF2B-D08D88D2F350}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77A2FC59-6739-4DC0-9CC7-98913CB506BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{77A2FC59-6739-4DC0-9CC7-98913CB506BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77A2FC59-6739-4DC0-9CC7-98913CB506BE}.Release|Any CPU.ActiveCfg = Release|Any CPU

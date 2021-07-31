@@ -3,7 +3,7 @@ import json
 import sys
 import io
 
-with open("../ReplicatorBot2/secrets.json") as f:
+with open("../src/ReplicatorBot/secrets.json") as f:
     d = f.read()
 
 secrets = json.loads(d)
