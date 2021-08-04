@@ -98,5 +98,12 @@ namespace DiscordBotCore
 			GuildId = guildId;
 			Prefix = "!";
 		}
+
+		public static Guild Get(BotDbBase context, ulong guildId) => context.Guild.FirstOrDefault(g => g.GuildId == guildId);
+		public static ValueTask<Guild> GetAsync(BotDbBase context, ulong guildId) => context.Guild.AsAsyncEnumerable().FirstOrDefaultAsync(g => g.GuildId == guildId);
+		public static Guild Add(BotDbBase context, Guild guild) => context.Guild.Add(guild).Entity;
+		public static Guild Update(BotDbBase context, Guild guild) => context.Guild.Update(guild).Entity;
+		public static void Delete(BotDbBase context, Guild guild) => context.Guild.Remove(guild);
+		public static void Delete(BotDbBase context, ulong guildId) => context.Guild.Remove(Get(context, guildId));
 	}
 }

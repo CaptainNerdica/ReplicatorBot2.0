@@ -27,8 +27,6 @@ namespace ReplicatorBot
 		protected IConfiguration Configuration { get; init; }
 		protected IServiceProvider Services { get; init; }
 
-		protected ICollection<ulong> AvailableServers { get; init; }
-
 		public Replicator(DiscordSocketClient client, CommandHandler commands, InteractionHandler interactions, ILogger<Replicator> logger, IConfiguration config, IServiceProvider services)
 		{
 			Client = client;
@@ -37,20 +35,26 @@ namespace ReplicatorBot
 			Logger = logger;
 			Configuration = config;
 			Services = services;
-			AvailableServers = new HashSet<ulong>();
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 		{
+			Client.Connected += ConnectedAsync;
+
+			stoppingToken.Register(UnregisterCallbacks);
+			await Task.Delay(Timeout.Infinite, stoppingToken);
+		}
+
+		private async Task ConnectedAsync()
+		{
 			Client.Log += LogAsync;
+			await Commands.InstallServiceAsync();
+			await InteractionHandler.InstallServiceAsync();
 			Client.GuildAvailable += GuildAvailableAsync;
 			Client.GuildUnavailable += GuildUnavailableAsync;
 			Client.JoinedGuild += JoinedGuildAsync;
 			Client.LeftGuild += LeftGuildAsync;
 			Client.MessageReceived += MessageReceievedAsync;
-
-			stoppingToken.Register(UnregisterCallbacks);
-			await Task.Delay(Timeout.Infinite, stoppingToken);
 		}
 
 		private void UnregisterCallbacks()
@@ -189,7 +193,6 @@ namespace ReplicatorBot
 			logger.LogInformation("Read all messages in guild {name} ({id})", guild.Name, guild.Id);
 			await reply.SendMessageAsync($"Read all messages and {currentUser.Mention} is now active");
 		}
-
 		internal static async Task ReadSinceTimestamp(ReplicatorContext context, ILogger logger, DiscordSocketClient client, SocketGuild guild, DateTime lastReceivedTime, ISocketMessageChannel reply)
 		{
 			logger.LogInformation("Read new messages");
@@ -240,31 +243,25 @@ namespace ReplicatorBot
 			logger.LogInformation("Read all new messages in guild {name} ({id})", guild.Name, guild.Id);
 			await reply.SendMessageAsync("Read all new messages");
 		}
+
 		#region Guild Availability Handlers
 		private async Task GuildAvailableAsync(SocketGuild guild)
 		{
 			await AddGuildAsync(guild);
-			AvailableServers.Add(guild.Id);
 			Logger.LogInformation("Server {name} ({id}) became available", guild.Name, guild.Id);
 		}
-
 		private async Task GuildUnavailableAsync(SocketGuild guild)
 		{
 			await AddGuildAsync(guild);
-			AvailableServers.Remove(guild.Id);
 			Logger.LogInformation("Server {name} ({id}) became unavailable", guild.Name, guild.Id);
 		}
-
 		private async Task JoinedGuildAsync(SocketGuild guild)
 		{
 			await AddGuildAsync(guild);
-			AvailableServers.Add(guild.Id);
 			Logger.LogInformation("Joined Server {name} ({id})", guild.Name, guild.Id);
 		}
-
 		private async Task LeftGuildAsync(SocketGuild guild)
 		{
-			AvailableServers.Remove(guild.Id);
 			await RemoveGuildAsync(guild);
 			Logger.LogInformation("Left Server {name} ({id})", guild.Name, guild.Id);
 		}
@@ -282,7 +279,6 @@ namespace ReplicatorBot
 				await context.SaveChangesAsync();
 			}
 		}
-
 		private async Task RemoveGuildAsync(SocketGuild guild)
 		{
 			using var scope = Services.CreateScope();

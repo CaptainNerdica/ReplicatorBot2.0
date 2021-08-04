@@ -2,12 +2,9 @@
 
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
-		<UserSecretsId>dotnet-ReplicatorBot2.0-EDA66423-B5E7-4FD7-8A5D-D2B75F3FD9D5</UserSecretsId>
 		<RootNamespace>ReplicatorBot</RootNamespace>
 		<AssemblyName>ReplicatorBot</AssemblyName>
-		<Authors>Aidan Orr</Authors>
-		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-		<DockerfileContext>.</DockerfileContext>
+		<Authors>CaptainNerdica (Aidan Orr)</Authors>
 		<Version>2.1.0-beta</Version>
 	</PropertyGroup>
 
@@ -17,12 +14,12 @@
 
 	<ItemGroup>
 		<PackageReference Include="Discord.Net.Labs" Version="2.4.9" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.8" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.0-preview.6.21352.1" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.0-preview.6.21352.1">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0-preview.6.21352.12" />
 	</ItemGroup>
 
 	<ItemGroup>

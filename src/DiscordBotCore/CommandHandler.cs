@@ -60,7 +60,7 @@ namespace DiscordBotCore
 		protected virtual async Task HandleCommandsAsync(SocketMessage messageParam)
 		{
 			using var scope = Services.CreateScope();
-			using var appDb = scope.ServiceProvider.GetService<BotDbBase>();
+			using var appDb = scope.ServiceProvider.GetRequiredService<BotDbBase>();
 			// Don't process the command if it was a system message
 			if (messageParam is not SocketUserMessage message) return;
 			if ((message.Author as IGuildUser)?.Guild is not SocketGuild guild)

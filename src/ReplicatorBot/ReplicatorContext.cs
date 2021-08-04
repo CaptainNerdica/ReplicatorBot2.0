@@ -39,6 +39,8 @@ namespace ReplicatorBot
 
 			builder.Entity<GuildConfig>(entity =>
 			{
+				entity.HasKey(e => e.GuildId);
+
 				entity.Property(e => e.TargetUserId)
 					.HasConversion(converter)
 					.ValueGeneratedNever();
@@ -151,117 +153,5 @@ namespace ReplicatorBot
 				optionsBuilder.UseLazyLoadingProxies();
 			}
 		}
-	}
-
-	public class GuildConfig
-	{
-		public ulong GuildId { get; set; }
-		public bool Enabled { get; set; }
-		public ulong? TargetUserId { get; set; }
-		public int GuildMessageCount { get; set; }
-		public int TargetMessageCount { get; set; }
-		public double Probability { get; set; }
-		public bool AutoUpdateProbability { get; set; }
-		public bool AutoUpdateMessages { get; set; }
-		public bool CanMention { get; set; }
-		public bool CanEmbed { get; set; }
-		public DateTime LastUpdate { get; set; }
-
-		public GuildConfig(ulong guildId)
-		{
-			GuildId = guildId;
-		}
-
-		public GuildConfig(ulong guildId, bool enabled, ulong? targetUserId, int guildMessageCount, int targetMessageCount, double probability, bool autoUpdateProbability, bool canMention, bool canEmbed, DateTime lastUpdate)
-		{
-			GuildId = guildId;
-			Enabled = enabled;
-			TargetUserId = targetUserId;
-			GuildMessageCount = guildMessageCount;
-			TargetMessageCount = targetMessageCount;
-			Probability = probability;
-			AutoUpdateProbability = autoUpdateProbability;
-			CanMention = canMention;
-			CanEmbed = canEmbed;
-			LastUpdate = lastUpdate;
-		}
-
-		public virtual Guild Guild { get; set; }
-		public virtual ICollection<ChannelPermissions> ChannelPermissions { get; set; } = new HashSet<ChannelPermissions>();
-		public virtual ICollection<DisabledUser> DisabledUsers { get; set; } = new HashSet<DisabledUser>();
-		public virtual ICollection<DisabledSubstring> DisabledSubstrings { get; set; } = new HashSet<DisabledSubstring>();
-		public virtual ICollection<Message> Messages { get; set; } = new HashSet<Message>();
-	}
-
-	[Flags]
-	public enum ChannelPermission
-	{
-		Read = 1,
-		Write = 2,
-		ReadWrite = Read | Write
-	}
-
-	public class ChannelPermissions
-	{
-		public ulong GuildId { get; set; }
-		public ulong ChannelId { get; set; }
-		public ChannelPermission Permissions { get; set; }
-
-		public ChannelPermissions(ulong guildId, ulong channelId, ChannelPermission permissions)
-		{
-			GuildId = guildId;
-			ChannelId = channelId;
-			Permissions = permissions;
-		}
-
-		public virtual GuildConfig GuildConfig { get; set; }
-	}
-
-	public class DisabledUser
-	{
-		public ulong GuildId { get; set; }
-		public ulong UserId { get; set; }
-
-		public DisabledUser(ulong guildId, ulong userId)
-		{
-			GuildId = guildId;
-			UserId = userId;
-		}
-
-		public virtual GuildConfig GuildConfig { get; set; }
-	}
-
-	public class DisabledSubstring
-	{
-		public ulong GuildId { get; set; }
-		public int Index { get; set; }
-		public string Substring { get; set; }
-
-		public DisabledSubstring(ulong guildId, int index, string substring)
-		{
-			GuildId = guildId;
-			Index = index;
-			Substring = substring;
-		}
-
-		public virtual GuildConfig GuildConfig { get; set; }
-	}
-
-	public class Message
-	{
-		public ulong GuildId { get; set; }
-		public ulong MessageId { get; set; }
-		public int Index { get; set; }
-		public string Text { get; set; }
-
-		public Message(ulong guildId, ulong messageId, int index, string text)
-		{
-			GuildId = guildId;
-			MessageId = messageId;
-			Index = index;
-			Text = text;
-		}
-
-		public virtual GuildConfig GuildConfig { get; set; }
 	}
 }

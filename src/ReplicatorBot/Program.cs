@@ -5,12 +5,9 @@ using DiscordBotCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ReplicatorBot
@@ -24,7 +21,10 @@ namespace ReplicatorBot
 			.ConfigureAppConfiguration((context, config) =>
 			{
 				if (context.HostingEnvironment.IsDevelopment())
+				{
 					config.AddJsonFile("secrets.json", true);
+				}
+
 				config.AddCommandLine(args, new Dictionary<string, string>
 				{
 					{ "-t", "Token" },
@@ -46,19 +46,22 @@ namespace ReplicatorBot
 					connection = "DataSource=/data/application.db";
 				}
 				else
+				{
 					connection = csValue;
+				}
 
 				using ReplicatorContext dbContext = new ReplicatorContext(connection, provider);
 				if (!dbContext.Database.CanConnect())
 					dbContext.Database.EnsureDeleted();
+
 				dbContext.Database.Migrate();
 
 				services.AddLogging()
 					.AddScoped(services => new ReplicatorContext(connection, provider))
-					.AddSingleton(Task.Run(async() => await ConfigureClientAsync(context.Configuration)).Result)
+					.AddSingleton(ConfigureClientAsync(context.Configuration).Result)
 					.AddSingleton<CommandService>()
-					.AddSingleton(provider => HandlerService.Instantiate<CommandHandler>(provider))
-					.AddSingleton(provider => HandlerService.Instantiate<InteractionHandler>(provider))
+					.AddSingleton(provider => HandlerService.Instantiate<CommandHandler>(provider, false))
+					.AddSingleton(provider => HandlerService.Instantiate<InteractionHandler>(provider, false))
 					.AddHostedService<Replicator>();
 			});
 
@@ -68,13 +71,24 @@ namespace ReplicatorBot
 			string fileConfig = config.GetValue<string>("TokenFile");
 			string tokenConfig = config.GetValue<string>("Token");
 			if (!string.IsNullOrEmpty(fileConfig) && !string.IsNullOrEmpty(tokenConfig))
+			{
 				throw new Exception("Configuration contains both Token and TokenFile parameters");
+			}
+
 			if (string.IsNullOrEmpty(fileConfig) && string.IsNullOrEmpty(tokenConfig))
+			{
 				throw new Exception("Configuration does not contain a string or file for the bot token");
+			}
+
 			if (!string.IsNullOrEmpty(fileConfig))
+			{
 				token = System.IO.File.ReadAllText(fileConfig);
+			}
 			else
+			{
 				token = tokenConfig;
+			}
+
 			DiscordSocketClient client = new DiscordSocketClient();
 			await client.LoginAsync(TokenType.Bot, token);
 			await client.StartAsync();
