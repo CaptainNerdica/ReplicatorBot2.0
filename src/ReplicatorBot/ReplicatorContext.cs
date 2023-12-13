@@ -26,7 +26,6 @@ namespace ReplicatorBot
 
 		public DbSet<GuildConfig> GuildConfig { get; set; }
 		public DbSet<ChannelPermissions> ChannelPermissions { get; set; }
-		public DbSet<DisabledSubstring> DisabledSubstrings { get; set; }
 		public DbSet<DisabledUser> DisabledUsers { get; set; }
 		public DbSet<Message> Messages { get; set; }
 
@@ -71,24 +70,6 @@ namespace ReplicatorBot
 
 			});
 
-			builder.Entity<DisabledSubstring>(entity =>
-			{
-				entity.HasKey(e => new { e.GuildId, e.Index });
-
-				entity.Property(e => e.GuildId)
-					.HasConversion(converter)
-					.ValueGeneratedNever();
-
-				entity.Property(e => e.Substring)
-					.HasMaxLength(200)
-					.IsRequired();
-
-				entity.HasOne(e => e.GuildConfig)
-					.WithMany(d => d.DisabledSubstrings)
-					.HasForeignKey(e => e.GuildId)
-					.HasPrincipalKey(d => d.GuildId);
-			});
-
 			builder.Entity<DisabledUser>(entity =>
 			{
 				entity.HasKey(e => new { e.GuildId, e.UserId });
@@ -124,6 +105,10 @@ namespace ReplicatorBot
 
 				entity.Property(e => e.Text)
 					.HasMaxLength(6144)
+					.IsRequired();
+
+				entity.Property(e => e.Type)
+					.HasConversion(new EnumToNumberConverter<MessageType, int>())
 					.IsRequired();
 
 				entity.HasOne(e => e.GuildConfig)

@@ -58,10 +58,6 @@ namespace DiscordBotCore
 				entity.Property(e => e.GuildId)
 					.HasConversion(converter)
 					.ValueGeneratedNever();
-
-				entity.Property(e => e.Prefix)
-					.HasMaxLength(10)
-					.IsRequired();
 			});
 		}
 
@@ -90,20 +86,18 @@ namespace DiscordBotCore
 	public class Guild
 	{
 		public ulong GuildId { get; set; }
-		public string Prefix { get; set; }
 		public Guild() { }
 
 		public Guild(ulong guildId)
 		{
 			GuildId = guildId;
-			Prefix = "!";
 		}
 
-		public static Guild Get(BotDbBase context, ulong guildId) => context.Guild.FirstOrDefault(g => g.GuildId == guildId);
-		public static ValueTask<Guild> GetAsync(BotDbBase context, ulong guildId) => context.Guild.AsAsyncEnumerable().FirstOrDefaultAsync(g => g.GuildId == guildId);
+		public static Guild? Get(BotDbBase context, ulong guildId) => context.Guild.FirstOrDefault(g => g.GuildId == guildId);
+		public static ValueTask<Guild?> GetAsync(BotDbBase context, ulong guildId) => context.Guild.AsAsyncEnumerable().FirstOrDefaultAsync(g => g.GuildId == guildId);
 		public static Guild Add(BotDbBase context, Guild guild) => context.Guild.Add(guild).Entity;
 		public static Guild Update(BotDbBase context, Guild guild) => context.Guild.Update(guild).Entity;
 		public static void Delete(BotDbBase context, Guild guild) => context.Guild.Remove(guild);
-		public static void Delete(BotDbBase context, ulong guildId) => context.Guild.Remove(Get(context, guildId));
+		public static void Delete(BotDbBase context, ulong guildId) => context.Guild.Remove(Get(context, guildId)!);
 	}
 }

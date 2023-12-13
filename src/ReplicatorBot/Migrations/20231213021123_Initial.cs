@@ -1,10 +1,14 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
+#nullable disable
+
 namespace ReplicatorBot.Migrations
 {
+    /// <inheritdoc />
     public partial class Initial : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -21,7 +25,6 @@ namespace ReplicatorBot.Migrations
                     AutoUpdateProbability = table.Column<bool>(type: "INTEGER", nullable: false),
                     AutoUpdateMessages = table.Column<bool>(type: "INTEGER", nullable: false),
                     CanMention = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CanEmbed = table.Column<bool>(type: "INTEGER", nullable: false),
                     LastUpdate = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
@@ -42,25 +45,6 @@ namespace ReplicatorBot.Migrations
                     table.PrimaryKey("PK_ChannelPermissions", x => new { x.GuildId, x.ChannelId });
                     table.ForeignKey(
                         name: "FK_ChannelPermissions_GuildConfig_GuildId",
-                        column: x => x.GuildId,
-                        principalTable: "GuildConfig",
-                        principalColumn: "GuildId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DisabledSubstrings",
-                columns: table => new
-                {
-                    GuildId = table.Column<long>(type: "INTEGER", nullable: false),
-                    Index = table.Column<int>(type: "INTEGER", nullable: false),
-                    Substring = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DisabledSubstrings", x => new { x.GuildId, x.Index });
-                    table.ForeignKey(
-                        name: "FK_DisabledSubstrings_GuildConfig_GuildId",
                         column: x => x.GuildId,
                         principalTable: "GuildConfig",
                         principalColumn: "GuildId",
@@ -89,8 +73,7 @@ namespace ReplicatorBot.Migrations
                 name: "Guild",
                 columns: table => new
                 {
-                    GuildId = table.Column<ulong>(type: "INTEGER", nullable: false),
-                    Prefix = table.Column<string>(type: "TEXT", nullable: true)
+                    GuildId = table.Column<ulong>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -109,6 +92,7 @@ namespace ReplicatorBot.Migrations
                 {
                     MessageId = table.Column<long>(type: "INTEGER", nullable: false),
                     GuildId = table.Column<long>(type: "INTEGER", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
                     Index = table.Column<int>(type: "INTEGER", nullable: false),
                     Text = table.Column<string>(type: "TEXT", maxLength: 6144, nullable: false)
                 },
@@ -130,13 +114,11 @@ namespace ReplicatorBot.Migrations
                 unique: true);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "ChannelPermissions");
-
-            migrationBuilder.DropTable(
-                name: "DisabledSubstrings");
 
             migrationBuilder.DropTable(
                 name: "DisabledUsers");

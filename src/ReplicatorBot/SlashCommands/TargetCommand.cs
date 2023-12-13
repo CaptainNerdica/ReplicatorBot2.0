@@ -1,68 +1,88 @@
 ﻿using Discord;
+using Discord.Interactions;
 using Discord.WebSocket;
-using DiscordBotCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ReplicatorBot.SlashCommands
+namespace ReplicatorBot.SlashCommands;
+[Group("target", "Set the target user to replicate")]
+public class TargetCommand : InteractionModuleBase<SocketInteractionContext>
 {
-	[SlashCommand("target")]
-	public class TargetCommand : SlashCommandBase, IGuildSlashCommand
+	protected ReplicatorContext ReplicatorContext { get; }
+	protected ILogger<ProbabilityCommand> Logger { get; }
+
+	public TargetCommand(ReplicatorContext context, ILogger<ProbabilityCommand> logger)
 	{
-		protected DiscordSocketClient Client { get; init; }
-		protected ReplicatorContext ReplicatorContext { get; init; }
+		ReplicatorContext = context;
+		Logger = logger;
+	}
 
-		public TargetCommand(DiscordSocketClient client, ReplicatorContext context)
+	[SlashCommand("get", "Get the current target user")]
+	public async Task GetTargetAsync()
+	{
+		GuildConfig? guild = await GuildConfig.GetAsync(ReplicatorContext, Context.Guild.Id);
+		if (guild is null)
 		{
-			Client = client;
-			ReplicatorContext = context;
+			await RespondAsync("An error has occurred: Server config does not exist");
+			return;
 		}
 
-		public override void BuildCommand(SlashCommandBuilder builder)
+		ulong? userId = guild.TargetUserId;
+
+		if (userId is null)
+			await RespondAsync("Current target: None");
+		else
 		{
-			builder.WithName("target")
-				.WithDescription("Set the target user to replicate");
+			SocketUser? user = await Context.Client.GetUserAsync((ulong)userId) as SocketUser;
+			await RespondAsync($"Current target: {user?.Mention}", allowedMentions: AllowedMentions.None);
+		}
+	}
 
-			builder.AddOption("get", ApplicationCommandOptionType.SubCommand, "Get the current target user");
-
-			SlashCommandOptionBuilder setOptions = new SlashCommandOptionBuilder().AddOption("user", ApplicationCommandOptionType.User, "The user to set", true);
-			builder.AddOption("set", ApplicationCommandOptionType.SubCommand, "Set the current target user", options: setOptions.Options);
+	[SlashCommand("set", "Set the current target user")]
+	public async Task SetTargetAsync([Summary(description: "The user to set")] IUser? user = null, [Summary(description: "The id of the user to set")] ulong? userId = null)
+	{
+		if (user is null && userId is null)
+		{
+			await RespondAsync("At least one parameter is required", ephemeral: true);
+			return;
 		}
 
-		public async Task ExecuteGuildCommandAsync(ulong guildId)
+		if (user is not null && userId is not null)
 		{
-			string sub = Command.Data.Options.First().Name;
-			await (sub switch
-			{
-				"get" => ExecuteGetAsync(guildId),
-				"set" => ExecuteSetAsync(guildId, Command.Data.Options.Skip(1)),
-				_ => Task.CompletedTask
-			});
+			await RespondAsync("Cannot set both parameters", ephemeral: true);
+			return;
 		}
 
-		private async Task ExecuteGetAsync(ulong guildId)
+		GuildConfig? guild = await GuildConfig.GetAsync(ReplicatorContext, Context.Guild.Id);
+
+		if (guild is null)
 		{
-			GuildConfig config = await GuildConfig.GetAsync(ReplicatorContext, guildId);
-			ulong? userId = config.TargetUserId;
-			if (userId is null)
-				await Command.RespondAsync("Current target: None");
-			else
-			{
-				SocketUser user = await Client.GetUserAsync((ulong)userId) as SocketUser;
-				await Command.RespondAsync($"Current target: {user.Mention}", allowedMentions: AllowedMentions.None);
-			}
+			await RespondAsync("An error has occurred: Server config does not exist");
+			return;
 		}
-		private async Task ExecuteSetAsync(ulong guildId, IEnumerable<SocketSlashCommandDataOption> options)
+
+		if (user is not null)
+			guild.TargetUserId = user.Id;
+
+		if (userId is not null)
 		{
-			GuildConfig config = await GuildConfig.GetAsync(ReplicatorContext, guildId);
-			IUser user = options.First().Value as IUser;
-			config.TargetUserId = user.Id;
-			GuildConfig.Update(ReplicatorContext, config);
-			await ReplicatorContext.SaveChangesAsync();
-			await Command.RespondAsync($"Set targeted user to: {user.Mention}", allowedMentions: AllowedMentions.None);
+			guild.TargetUserId = userId;
+			user = await Context.Client.GetUserAsync((ulong)userId);
 		}
+
+		GuildConfig.Update(ReplicatorContext, guild);
+		await ReplicatorContext.SaveChangesAsync();
+
+		await RespondAsync($"Set targeted user to: {user!.Mention}", allowedMentions: AllowedMentions.None);
+	}
+
+	public override Task AfterExecuteAsync(ICommandInfo command)
+	{
+		return base.AfterExecuteAsync(command);
 	}
 }
