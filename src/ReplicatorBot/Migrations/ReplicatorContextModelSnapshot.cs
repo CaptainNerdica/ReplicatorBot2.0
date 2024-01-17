@@ -75,13 +75,7 @@ namespace ReplicatorBot.Migrations
                     b.Property<bool>("CanMention")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Delay")
-                        .HasColumnType("INTEGER");
-
                     b.Property<bool>("Enabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("FixedDelay")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("GuildMessageCount")
