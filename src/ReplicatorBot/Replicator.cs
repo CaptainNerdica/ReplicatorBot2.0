@@ -149,12 +149,12 @@ namespace ReplicatorBot
 				StringBuilder sb = new(message.Content);
 				if (message.Attachments.Count != 0)
 				{
-					sb.AppendJoin(' ', message.Attachments.Where(a => !string.IsNullOrEmpty(a.Url)).Select(m => m.Url));
+					sb.Append(' ').AppendJoin(' ', message.Attachments.Where(a => !string.IsNullOrEmpty(a.Url)).Select(m => m.Url));
 				}
 
 				if (message.Embeds.Count != 0)
 				{
-					sb.AppendJoin(' ', message.Embeds.Where(a => !string.IsNullOrEmpty(a.Url)).Select(m => m.Url));
+					sb.Append(' ').AppendJoin(' ', message.Embeds.Where(a => !string.IsNullOrEmpty(a.Url)).Select(m => m.Url));
 				}
 
 				content = sb.ToString();
@@ -406,6 +406,12 @@ namespace ReplicatorBot
 					config.Probability = (double)config.TargetMessageCount / config.GuildMessageCount;
 
 				context.GuildConfig.Update(config);
+
+				int messageIndex = 0;
+				foreach(var message in messages)
+				{
+					message.Index = messageIndex++;
+				}
 
 				context.Messages.AddRange(messages);
 
