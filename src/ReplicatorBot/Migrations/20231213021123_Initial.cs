@@ -1,19 +1,23 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
+#nullable disable
+
 namespace ReplicatorBot.Migrations
 {
+    /// <inheritdoc />
     public partial class Initial : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "GuildInfo",
+                name: "GuildConfig",
                 columns: table => new
                 {
-                    GuildId = table.Column<long>(type: "INTEGER", nullable: false),
+                    GuildId = table.Column<ulong>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
                     Enabled = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Prefix = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
                     TargetUserId = table.Column<long>(type: "INTEGER", nullable: true),
                     GuildMessageCount = table.Column<int>(type: "INTEGER", nullable: false),
                     TargetMessageCount = table.Column<int>(type: "INTEGER", nullable: false),
@@ -21,12 +25,11 @@ namespace ReplicatorBot.Migrations
                     AutoUpdateProbability = table.Column<bool>(type: "INTEGER", nullable: false),
                     AutoUpdateMessages = table.Column<bool>(type: "INTEGER", nullable: false),
                     CanMention = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CanEmbed = table.Column<bool>(type: "INTEGER", nullable: false),
                     LastUpdate = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_GuildInfo", x => x.GuildId);
+                    table.PrimaryKey("PK_GuildConfig", x => x.GuildId);
                 });
 
             migrationBuilder.CreateTable(
@@ -41,28 +44,9 @@ namespace ReplicatorBot.Migrations
                 {
                     table.PrimaryKey("PK_ChannelPermissions", x => new { x.GuildId, x.ChannelId });
                     table.ForeignKey(
-                        name: "FK_ChannelPermissions_GuildInfo_GuildId",
+                        name: "FK_ChannelPermissions_GuildConfig_GuildId",
                         column: x => x.GuildId,
-                        principalTable: "GuildInfo",
-                        principalColumn: "GuildId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DisabledSubstrings",
-                columns: table => new
-                {
-                    GuildId = table.Column<long>(type: "INTEGER", nullable: false),
-                    Index = table.Column<int>(type: "INTEGER", nullable: false),
-                    Substring = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DisabledSubstrings", x => new { x.GuildId, x.Index });
-                    table.ForeignKey(
-                        name: "FK_DisabledSubstrings_GuildInfo_GuildId",
-                        column: x => x.GuildId,
-                        principalTable: "GuildInfo",
+                        principalTable: "GuildConfig",
                         principalColumn: "GuildId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -78,9 +62,26 @@ namespace ReplicatorBot.Migrations
                 {
                     table.PrimaryKey("PK_DisabledUsers", x => new { x.GuildId, x.UserId });
                     table.ForeignKey(
-                        name: "FK_DisabledUsers_GuildInfo_GuildId",
+                        name: "FK_DisabledUsers_GuildConfig_GuildId",
                         column: x => x.GuildId,
-                        principalTable: "GuildInfo",
+                        principalTable: "GuildConfig",
+                        principalColumn: "GuildId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Guild",
+                columns: table => new
+                {
+                    GuildId = table.Column<ulong>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Guild", x => x.GuildId);
+                    table.ForeignKey(
+                        name: "FK_Guild_GuildConfig_GuildId",
+                        column: x => x.GuildId,
+                        principalTable: "GuildConfig",
                         principalColumn: "GuildId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -91,16 +92,17 @@ namespace ReplicatorBot.Migrations
                 {
                     MessageId = table.Column<long>(type: "INTEGER", nullable: false),
                     GuildId = table.Column<long>(type: "INTEGER", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
                     Index = table.Column<int>(type: "INTEGER", nullable: false),
-                    Text = table.Column<string>(type: "TEXT", maxLength: 2048, nullable: false)
+                    Text = table.Column<string>(type: "TEXT", maxLength: 6144, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Messages", x => x.MessageId);
                     table.ForeignKey(
-                        name: "FK_Messages_GuildInfo_GuildId",
+                        name: "FK_Messages_GuildConfig_GuildId",
                         column: x => x.GuildId,
-                        principalTable: "GuildInfo",
+                        principalTable: "GuildConfig",
                         principalColumn: "GuildId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -112,22 +114,23 @@ namespace ReplicatorBot.Migrations
                 unique: true);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "ChannelPermissions");
 
             migrationBuilder.DropTable(
-                name: "DisabledSubstrings");
+                name: "DisabledUsers");
 
             migrationBuilder.DropTable(
-                name: "DisabledUsers");
+                name: "Guild");
 
             migrationBuilder.DropTable(
                 name: "Messages");
 
             migrationBuilder.DropTable(
-                name: "GuildInfo");
+                name: "GuildConfig");
         }
     }
 }

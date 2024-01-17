@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 
 default.profraw
+secrets*.json
+**/Properties/*

@@ -2,21 +2,34 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ReplicatorBot;
 
+#nullable disable
+
 namespace ReplicatorBot.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
-    [Migration("20210606062553_Initial")]
-    partial class Initial
+    [DbContext(typeof(ReplicatorContext))]
+    partial class ReplicatorContextModelSnapshot : ModelSnapshot
     {
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "5.0.6");
+                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("Proxies:ChangeTracking", false)
+                .HasAnnotation("Proxies:CheckEquality", false)
+                .HasAnnotation("Proxies:LazyLoading", true);
+
+            modelBuilder.Entity("DiscordBotCore.Guild", b =>
+                {
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("GuildId");
+
+                    b.ToTable("Guild");
+                });
 
             modelBuilder.Entity("ReplicatorBot.ChannelPermissions", b =>
                 {
@@ -34,24 +47,6 @@ namespace ReplicatorBot.Migrations
                     b.ToTable("ChannelPermissions");
                 });
 
-            modelBuilder.Entity("ReplicatorBot.DisabledSubstring", b =>
-                {
-                    b.Property<long>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Index")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Substring")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("GuildId", "Index");
-
-                    b.ToTable("DisabledSubstrings");
-                });
-
             modelBuilder.Entity("ReplicatorBot.DisabledUser", b =>
                 {
                     b.Property<long>("GuildId")
@@ -65,18 +60,16 @@ namespace ReplicatorBot.Migrations
                     b.ToTable("DisabledUsers");
                 });
 
-            modelBuilder.Entity("ReplicatorBot.GuildInfo", b =>
+            modelBuilder.Entity("ReplicatorBot.GuildConfig", b =>
                 {
-                    b.Property<long>("GuildId")
+                    b.Property<ulong>("GuildId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("AutoUpdateMessages")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("AutoUpdateProbability")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("CanEmbed")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("CanMention")
@@ -91,11 +84,6 @@ namespace ReplicatorBot.Migrations
                     b.Property<DateTime>("LastUpdate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Prefix")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("TEXT");
-
                     b.Property<double>("Probability")
                         .HasColumnType("REAL");
 
@@ -107,7 +95,7 @@ namespace ReplicatorBot.Migrations
 
                     b.HasKey("GuildId");
 
-                    b.ToTable("GuildInfo");
+                    b.ToTable("GuildConfig");
                 });
 
             modelBuilder.Entity("ReplicatorBot.Message", b =>
@@ -123,8 +111,11 @@ namespace ReplicatorBot.Migrations
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasMaxLength(2048)
+                        .HasMaxLength(6144)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("MessageId");
 
@@ -134,57 +125,55 @@ namespace ReplicatorBot.Migrations
                     b.ToTable("Messages");
                 });
 
+            modelBuilder.Entity("DiscordBotCore.Guild", b =>
+                {
+                    b.HasOne("ReplicatorBot.GuildConfig", null)
+                        .WithOne("Guild")
+                        .HasForeignKey("DiscordBotCore.Guild", "GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ReplicatorBot.ChannelPermissions", b =>
                 {
-                    b.HasOne("ReplicatorBot.GuildInfo", "GuildInfo")
+                    b.HasOne("ReplicatorBot.GuildConfig", "GuildConfig")
                         .WithMany("ChannelPermissions")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("GuildInfo");
-                });
-
-            modelBuilder.Entity("ReplicatorBot.DisabledSubstring", b =>
-                {
-                    b.HasOne("ReplicatorBot.GuildInfo", "GuildInfo")
-                        .WithMany("DisabledSubstrings")
-                        .HasForeignKey("GuildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GuildInfo");
+                    b.Navigation("GuildConfig");
                 });
 
             modelBuilder.Entity("ReplicatorBot.DisabledUser", b =>
                 {
-                    b.HasOne("ReplicatorBot.GuildInfo", "GuildInfo")
+                    b.HasOne("ReplicatorBot.GuildConfig", "GuildConfig")
                         .WithMany("DisabledUsers")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("GuildInfo");
+                    b.Navigation("GuildConfig");
                 });
 
             modelBuilder.Entity("ReplicatorBot.Message", b =>
                 {
-                    b.HasOne("ReplicatorBot.GuildInfo", "GuildInfo")
+                    b.HasOne("ReplicatorBot.GuildConfig", "GuildConfig")
                         .WithMany("Messages")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("GuildInfo");
+                    b.Navigation("GuildConfig");
                 });
 
-            modelBuilder.Entity("ReplicatorBot.GuildInfo", b =>
+            modelBuilder.Entity("ReplicatorBot.GuildConfig", b =>
                 {
                     b.Navigation("ChannelPermissions");
 
-                    b.Navigation("DisabledSubstrings");
-
                     b.Navigation("DisabledUsers");
+
+                    b.Navigation("Guild");
 
                     b.Navigation("Messages");
                 });
