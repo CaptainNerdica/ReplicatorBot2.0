@@ -271,6 +271,7 @@ namespace ReplicatorBot
 			}
 
 			context.Messages.RemoveRange(context.Messages.AsQueryable().Where(c => c.GuildId == guild.Id));
+			int messageIndex = 0;
 
 			SocketGuildUser currentUser = guild.GetUser(client.CurrentUser.Id);
 			foreach (var channel in guild.TextChannels)
@@ -407,7 +408,6 @@ namespace ReplicatorBot
 
 				context.GuildConfig.Update(config);
 
-				int messageIndex = 0;
 				foreach(var message in messages)
 				{
 					message.Index = messageIndex++;
