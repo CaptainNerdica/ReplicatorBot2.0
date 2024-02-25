@@ -101,7 +101,7 @@ namespace ReplicatorBot
 
 				Discord.ChannelPermissions channelPerms = guild.GetUser(Client.CurrentUser.Id).GetPermissions(message.Channel as IGuildChannel);
 
-				if (config.Enabled && string.IsNullOrEmpty(message.Content))
+				if (config.Enabled)
 				{
 					config.LastUpdate = DateTime.UtcNow;
 					if (channelPerms.ViewChannel)
