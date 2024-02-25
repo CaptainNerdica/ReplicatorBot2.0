@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ReplicatorBot.SlashCommands;
-[Group("users", "Commands related to disabling replys to users")]
+[Group("disable-user", "Commands related to disabling replys to users")]
 public class UsersCommand : InteractionModuleBase<SocketInteractionContext>
 {
 	protected ReplicatorContext ReplicatorContext { get; }

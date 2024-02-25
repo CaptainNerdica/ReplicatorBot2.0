@@ -31,6 +31,6 @@ public class ReplyCommand : InteractionModuleBase<SocketInteractionContext>
 		} while (m.Type != MessageType.Raw);
 		
 		string message = m.Text;
-		await RespondAsync(message, allowedMentions: config.AllowedMentions);
+		await RespondAsync(message, allowedMentions: config.GetAllowedMentions());
 	}
 }

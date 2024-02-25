@@ -101,7 +101,7 @@ namespace ReplicatorBot
 
 				Discord.ChannelPermissions channelPerms = guild.GetUser(Client.CurrentUser.Id).GetPermissions(message.Channel as IGuildChannel);
 
-				if (config.Enabled && (string.IsNullOrEmpty(message.Content) || message.Content[0] != '!'))
+				if (config.Enabled && string.IsNullOrEmpty(message.Content))
 				{
 					config.LastUpdate = DateTime.UtcNow;
 					if (channelPerms.ViewChannel)
@@ -113,7 +113,7 @@ namespace ReplicatorBot
 								AddNewMessage(context, Client, message, config);
 						}
 
-						if (channelPerms.SendMessages && permissions.Permissions.HasFlag(ChannelPermission.Write) && !config.DisabledUsers.Where(d => d.UserId == message.Author.Id).Any())
+						if (channelPerms.SendMessages && permissions.Permissions.HasFlag(ChannelPermission.Write) && !config.DisabledUsers.Select(d => d.UserId).Contains(message.Author.Id))
 						{
 							if (message.MentionedUsers.Select(u => u.Id).Contains(Client.CurrentUser.Id))
 								await SendRandomMessageAsync(message.Channel, config).ConfigureAwait(false);
@@ -131,7 +131,11 @@ namespace ReplicatorBot
 			catch (Exception e)
 			{
 				using var typing = message.Channel.EnterTypingState();
-				await message.Channel.SendMessageAsync($"An error has occurred in response to message at {message.Timestamp} ({message}):\n{e}", allowedMentions: AllowedMentions.None);
+
+				var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+				DateTime messageTime = TimeZoneInfo.ConvertTimeFromUtc(message.Timestamp.UtcDateTime, timeZone);
+
+				await message.Channel.SendMessageAsync($"An error has occurred in response to message ({message.Id}) at {messageTime:G} {timeZone.StandardName} ({message.Content}):\n{e}", allowedMentions: AllowedMentions.None);
 			}
 		}
 
@@ -204,22 +208,29 @@ namespace ReplicatorBot
 		public async Task SendRandomMessageAsync(ISocketMessageChannel channel, GuildConfig config)
 		{
 			using var typing = channel.EnterTypingState();
-
 			Message m = RetrieveRandomMessage(config);
-			switch (m.Type)
+			try
 			{
-				case MessageType.Raw:
-					await channel.SendMessageAsync(m.Text, allowedMentions: config.CanMention ? AllowedMentions.All : AllowedMentions.None);
-					break;
-				case MessageType.Sticker:
-					ulong[] stickerIds = JsonSerializer.Deserialize<ulong[]>(m.Text) ?? throw new InvalidOperationException("Invalid sticker id");
-					ISticker[] stickers = stickerIds.Select(id => Client.GetSticker(id)).ToArray();
+				switch (m.Type)
+				{
+					case MessageType.Raw:
+						await channel.SendMessageAsync(m.Text, allowedMentions: config.GetAllowedMentions());
+						break;
+					case MessageType.Sticker:
+						ulong[] stickerIds = JsonSerializer.Deserialize<ulong[]>(m.Text) ?? throw new InvalidOperationException("Invalid sticker id");
+						ISticker[] stickers = stickerIds.Select(id => Client.GetSticker(id)).ToArray();
 
-					await channel.SendMessageAsync(stickers: stickers, allowedMentions: config.CanMention ? AllowedMentions.All : AllowedMentions.None);
-					break;
-				default:
-					throw new InvalidOperationException("Invalid message type");
-			};
+						await channel.SendMessageAsync(stickers: stickers, allowedMentions: config.GetAllowedMentions());
+						break;
+					default:
+						throw new InvalidOperationException("Invalid message type");
+				};
+			}
+			catch (Exception e)
+			{
+				string message = $"An error occurred while sending a random message\n{nameof(m.MessageId)}: {m.MessageId}, {nameof(m.Type)} {m.Type}, {nameof(m.Index)}: {m.Index}, {nameof(m.Text)}: '{m.Text}'\n";
+				throw new Exception(message, e);
+			}
 		}
 
 		public bool TryRetrieveRandomMessage(GuildConfig config, [NotNullWhen(true)] out Message? message)

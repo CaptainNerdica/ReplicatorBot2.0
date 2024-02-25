@@ -17,5 +17,17 @@ namespace ReplicatorBot
 	internal static class Extensions
 	{
 		public static LogLevel ToLogLevel(this LogSeverity log) => (LogLevel)(5 - (int)log);
+
+		public static AllowedMentions GetAllowedMentions(this GuildConfig config)
+		{
+			if (!config.CanMention)
+				return AllowedMentions.None;
+
+			AllowedMentions mentions = new AllowedMentions(AllowedMentionTypes.Roles | AllowedMentionTypes.Users | AllowedMentionTypes.Everyone);
+
+			mentions.UserIds.RemoveAll(id => config.DisabledUsers.Any(u => u.UserId == id));
+
+			return mentions;
+		}
 	}
 }

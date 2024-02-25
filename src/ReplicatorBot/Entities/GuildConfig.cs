@@ -1,5 +1,4 @@
-﻿using Discord;
-using DiscordBotCore;
+﻿using DiscordBotCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,8 +37,6 @@ namespace ReplicatorBot
 			CanMention = canMention;
 			LastUpdate = lastUpdate;
 		}
-
-		public AllowedMentions AllowedMentions => CanMention ? AllowedMentions.All : AllowedMentions.None;
 
 		public virtual Guild? Guild { get; set; }
 		public virtual ICollection<ChannelPermissions> ChannelPermissions { get; set; } = new HashSet<ChannelPermissions>();
