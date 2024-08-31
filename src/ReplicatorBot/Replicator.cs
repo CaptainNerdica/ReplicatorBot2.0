@@ -576,12 +576,6 @@ namespace ReplicatorBot
 			await AddGuildAsync(guild);
 			Logger.LogInformation("Server {name} ({id}) became available", guild.Name, guild.Id);
 
-			if (guild.Id == 432260408355586058)
-			{
-				var message = await guild.GetTextChannel(486628914936938496).GetMessageAsync(656924271767191552);
-				message = await guild.GetTextChannel(464196803001319455).GetMessageAsync(1232686696399634444);
-			}
-
 		}
 		private async Task GuildUnavailableAsync(SocketGuild guild)
 		{
