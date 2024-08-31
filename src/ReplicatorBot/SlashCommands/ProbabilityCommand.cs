@@ -40,28 +40,29 @@ public class ProbabilityCommand : InteractionModuleBase<SocketInteractionContext
 	public async Task SetProbabilityAsync(
 		[Summary(description: "Probability to set")] string probability)
 	{
-		if (double.TryParse(probability[..probability.IndexOf('%')], out double value))
+		int index = probability.IndexOf('%');
+		if (index == -1)
+			index = probability.Length;
+		if (!double.TryParse(probability[..index], out double value))
+			await RespondAsync("Probability is in the wrong format");
+
+		value /= 100;
+		value = Math.Clamp(value, 0, 1);
+
+		GuildConfig? guild = await GuildConfig.GetAsync(ReplicatorContext, Context.Guild.Id);
+		if (guild is null)
 		{
-			value /= 100;
-			value = Math.Clamp(value, 0, 1);
-
-			GuildConfig? guild = await GuildConfig.GetAsync(ReplicatorContext, Context.Guild.Id);
-			if (guild is null)
-			{
-				await RespondAsync("An error has occurred: Server config does not exist");
-				return;
-			}
-
-			guild.Probability = value;
-			guild.AutoUpdateProbability = false;
-
-			GuildConfig.Update(ReplicatorContext, guild);
-			await ReplicatorContext.SaveChangesAsync();
-
-			await RespondAsync($"Updated probability to: {guild.Probability:P1}");
+			await RespondAsync("An error has occurred: Server config does not exist");
+			return;
 		}
-		else
-			await RespondAsync("Input was not in the correct format");
+
+		guild.Probability = value;
+		guild.AutoUpdateProbability = false;
+
+		GuildConfig.Update(ReplicatorContext, guild);
+		await ReplicatorContext.SaveChangesAsync();
+
+		await RespondAsync($"Updated probability to: {guild.Probability:P1}");
 	}
 
 	[SlashCommand("auto", "Set probability to auto update or use a fixed value")]

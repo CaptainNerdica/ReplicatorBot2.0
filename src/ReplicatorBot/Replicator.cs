@@ -5,6 +5,7 @@ using Discord.Rest;
 using Discord.WebSocket;
 using DiscordBotCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,7 +14,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -164,6 +167,9 @@ namespace ReplicatorBot
 				content = sb.ToString();
 			}
 
+			if (string.IsNullOrEmpty(content))
+				return;
+
 			Message m = new Message(config.GuildId, message.Id, messageType, config.TargetMessageCount, content);
 			context.Messages.Add(m);
 
@@ -191,12 +197,12 @@ namespace ReplicatorBot
 				StringBuilder sb = new(message.Content);
 				if (message.Attachments.Count != 0)
 				{
-					sb.AppendJoin(' ', message.Attachments.Where(a => !string.IsNullOrEmpty(a.Url)).Select(m => m.Url));
+					sb.AppendJoin(' ', message.Attachments.Where(a => !string.IsNullOrEmpty(a.Url) && !message.Content.Contains(a.Url)).Select(m => m.Url)).Append('\n');
 				}
 
 				if (message.Embeds.Count != 0)
 				{
-					sb.AppendJoin(' ', message.Embeds.Where(a => !string.IsNullOrEmpty(a.Url)).Select(m => m.Url));
+					sb.AppendJoin(' ', message.Embeds.Where(a => !string.IsNullOrEmpty(a.Url) && !message.Content.Contains(a.Url)).Select(m => m.Url)).Append('\n');
 				}
 
 				content = sb.ToString();
@@ -205,26 +211,86 @@ namespace ReplicatorBot
 			return new Message(config.GuildId, message.Id, messageType, config.TargetMessageCount, content);
 		}
 
+		private async Task<bool> HandleStickers(ISocketMessageChannel channel, ulong[] stickerIds, AllowedMentions allowedMention)
+		{
+			List<FileAttachment> attachments = [];
+			List<ISticker> usableStickers = [];
+			using HttpClient client = new();
+
+			foreach (var stickerId in stickerIds)
+			{
+				ISticker sticker = await Client.GetStickerAsync(stickerId);
+				if (sticker is null)
+					continue;
+
+				if (sticker.Type == StickerType.Guild)
+					attachments.Add(await StickerToAttachmentAsync(sticker, client));
+				else
+					usableStickers.Add(sticker);
+			}
+
+			if (usableStickers.Count == 0 && attachments.Count == 0)
+				return false;
+
+			if (usableStickers.Count > 0)
+				await channel.SendMessageAsync(stickers: [.. usableStickers]);
+			if (attachments.Count > 0)
+			{
+				await channel.SendFilesAsync(attachments);
+				attachments.ForEach(attachments => attachments.Dispose());
+			}
+
+			return true;
+		}
+
+		public static async Task<FileAttachment> StickerToAttachmentAsync(ISticker sticker, HttpClient client)
+		{
+			ArgumentNullException.ThrowIfNull(sticker, nameof(sticker));
+
+			using var response = await client.GetAsync($"https://cdn.discordapp.com/stickers/{sticker.Id}");
+
+			MemoryStream ms = new();
+			await response.Content.CopyToAsync(ms);
+
+			string name = sticker.Format switch
+			{
+				StickerFormatType.Png or StickerFormatType.Apng => $"{sticker.Name}.png",
+				StickerFormatType.Lottie => $"{sticker.Name}.lottie",
+				(StickerFormatType)4 => $"{sticker.Name}.gif",
+				_ => throw new InvalidOperationException($"Invalid StickerFormatType {sticker.Format}")
+			};
+
+			return new FileAttachment(ms, name);
+		}
+
+		public async Task<bool> TrySendMessageAsync(Message message, ISocketMessageChannel channel, GuildConfig config)
+		{
+			if (string.IsNullOrEmpty(message.Text))
+				return false;
+			
+			switch (message.Type)
+			{
+				case MessageType.Raw:
+					await channel.SendMessageAsync(message.Text, allowedMentions: config.GetAllowedMentions());
+					return true;
+				case MessageType.Sticker:
+					ulong[] stickerIds = JsonSerializer.Deserialize<ulong[]>(message.Text) ?? throw new InvalidOperationException("Invalid sticker id");
+					return await HandleStickers(channel, stickerIds, config.GetAllowedMentions());
+				default:
+					return false;
+			};
+		}
+
 		public async Task SendRandomMessageAsync(ISocketMessageChannel channel, GuildConfig config)
 		{
 			using var typing = channel.EnterTypingState();
 			Message m = RetrieveRandomMessage(config);
 			try
 			{
-				switch (m.Type)
+				while (!await TrySendMessageAsync(m, channel, config))
 				{
-					case MessageType.Raw:
-						await channel.SendMessageAsync(m.Text, allowedMentions: config.GetAllowedMentions());
-						break;
-					case MessageType.Sticker:
-						ulong[] stickerIds = JsonSerializer.Deserialize<ulong[]>(m.Text) ?? throw new InvalidOperationException("Invalid sticker id");
-						ISticker[] stickers = stickerIds.Select(id => Client.GetSticker(id)).ToArray();
-
-						await channel.SendMessageAsync(stickers: stickers, allowedMentions: config.GetAllowedMentions());
-						break;
-					default:
-						throw new InvalidOperationException("Invalid message type");
-				};
+					m = RetrieveRandomMessage(config);
+				}
 			}
 			catch (Exception e)
 			{
@@ -256,7 +322,9 @@ namespace ReplicatorBot
 
 		private static bool TestMessageStorable(IMessage message, GuildConfig config)
 		{
-			return message.Author.Id == config.TargetUserId;
+			if (message.Type != Discord.MessageType.Default)
+				return false;
+            return message.Author.Id == config.TargetUserId;
 		}
 
 		private sealed class ConcurrentUpdateData
@@ -270,6 +338,10 @@ namespace ReplicatorBot
 		internal static async Task ReadAllMessages(ReplicatorContext context, DiscordSocketClient client, ILogger logger, SocketGuild guild, int maxChannelRead, ISocketMessageChannel reply)
 		{
 			GuildConfig config = context.GuildConfig.Include(g => g.ChannelPermissions).First(g => g.GuildId == guild.Id);
+
+			config.Enabled = false;
+			context.GuildConfig.Update(config);
+			context.SaveChanges();
 
 			config.GuildMessageCount = 0;
 			config.LastUpdate = default;
@@ -317,14 +389,14 @@ namespace ReplicatorBot
 				Thread updateThread = new Thread(async (d) =>
 				{
 					ConcurrentUpdateData concurrentUpdateData = d as ConcurrentUpdateData ?? throw new InvalidOperationException("Data was not correctly passed to thread");
-					
+
 					long nextProcessed = processedIncrement;
 					while (!data.IsFinished)
 					{
 						long processed = Interlocked.Read(ref data.Processed);
 						if (processed >= nextProcessed)
 						{
-							await responseMessage.ModifyAsync(m => m.Content = $"{channel.Mention}: Processed {processed} messages.").ConfigureAwait(false);							
+							await responseMessage.ModifyAsync(m => m.Content = $"{channel.Mention}: Processed {processed} messages.").ConfigureAwait(false);
 							while (nextProcessed <= processed)
 								nextProcessed += processedIncrement;
 						}
@@ -398,7 +470,7 @@ namespace ReplicatorBot
 				await foreach (var page in messageCollection)
 				{
 					int i = Array.IndexOf(pages, null);
-					
+
 					while (i == -1)
 					{
 						Thread.Sleep(20);
@@ -408,7 +480,7 @@ namespace ReplicatorBot
 					pages[i] = page;
 				}
 
-				foreach(var t in threadPool.Where(t => t.ThreadState == ThreadState.Running))
+				foreach (var t in threadPool.Where(t => t.ThreadState == ThreadState.Running))
 					t.Join();
 
 				config.GuildMessageCount += (int)data.Processed;
@@ -419,12 +491,12 @@ namespace ReplicatorBot
 
 				context.GuildConfig.Update(config);
 
-				foreach(var message in messages)
+				foreach (var message in messages)
 				{
 					message.Index = messageIndex++;
 				}
 
-				context.Messages.AddRange(messages);
+				context.Messages.AddRange(messages.Where(m => !string.IsNullOrEmpty(m.Text)));
 
 				data.IsFinished = true;
 				updateThread.Join();
@@ -503,6 +575,13 @@ namespace ReplicatorBot
 		{
 			await AddGuildAsync(guild);
 			Logger.LogInformation("Server {name} ({id}) became available", guild.Name, guild.Id);
+
+			if (guild.Id == 432260408355586058)
+			{
+				var message = await guild.GetTextChannel(486628914936938496).GetMessageAsync(656924271767191552);
+				message = await guild.GetTextChannel(464196803001319455).GetMessageAsync(1232686696399634444);
+			}
+
 		}
 		private async Task GuildUnavailableAsync(SocketGuild guild)
 		{
